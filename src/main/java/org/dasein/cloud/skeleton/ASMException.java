@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012-2013 Dell, Inc.
+ * Copyright (C) 2013 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -26,19 +26,19 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * Base exception class for errors that occur in MyCloud.
- * <p>Created by George Reese: 12/06/2012 9:44 AM</p>
+ * Base exception class for errors that occur in Dell ASM.
+ * <p>Created by George Reese: 05/17/2013 8:58 AM</p>
  * @author George Reese
- * @version 2013.01 initial version
- * @since 2013.01
+ * @version 2013.04 initial version
+ * @since 2013.04
  */
-public class CloudProviderException extends CloudException {
+public class ASMException extends CloudException {
 
-    public CloudProviderException(@Nonnull Throwable cause) {
+    public ASMException(@Nonnull Throwable cause) {
         super(cause);
     }
 
-    public CloudProviderException(@Nonnull CloudErrorType type, @Nonnegative int httpCode, @Nonnull String providerCode, @Nonnull String message) {
+    public ASMException(@Nonnull CloudErrorType type, @Nonnegative int httpCode, @Nonnull String providerCode, @Nonnull String message) {
         super(type, httpCode, providerCode, message);
     }
 }

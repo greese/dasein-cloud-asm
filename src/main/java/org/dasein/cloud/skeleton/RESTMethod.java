@@ -180,7 +180,7 @@ public class RESTMethod {
                         HttpEntity entity = response.getEntity();
 
                         if( entity == null ) {
-                            throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
+                            throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
                         }
                         String body;
 
@@ -188,13 +188,13 @@ public class RESTMethod {
                             body = EntityUtils.toString(entity);
                         }
                         catch( IOException e ) {
-                            throw new CloudProviderException(e);
+                            throw new ASMException(e);
                         }
                         if( wire.isDebugEnabled() ) {
                             wire.debug(body);
                         }
                         wire.debug("");
-                        throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), body);
+                        throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), body);
                     }
                 }
                 finally {
@@ -359,19 +359,19 @@ public class RESTMethod {
                         String body;
 
                         if( entity == null ) {
-                            throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
+                            throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
                         }
                         try {
                             body = EntityUtils.toString(entity);
                         }
                         catch( IOException e ) {
-                            throw new CloudProviderException(e);
+                            throw new ASMException(e);
                         }
                         if( wire.isDebugEnabled() ) {
                             wire.debug(body);
                         }
                         wire.debug("");
-                        apiResponse.receive(new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), body));
+                        apiResponse.receive(new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), body));
                     }
                     else {
                         HttpEntity entity = response.getEntity();
@@ -407,7 +407,7 @@ public class RESTMethod {
                                 body = EntityUtils.toString(entity);
                             }
                             catch( IOException e ) {
-                                throw new CloudProviderException(e);
+                                throw new ASMException(e);
                             }
                             if( wire.isDebugEnabled() ) {
                                 wire.debug(body);
@@ -674,19 +674,19 @@ public class RESTMethod {
                         HttpEntity entity = response.getEntity();
 
                         if( entity == null ) {
-                            throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
+                            throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
                         }
                         try {
                             json = EntityUtils.toString(entity);
                         }
                         catch( IOException e ) {
-                            throw new CloudProviderException(e);
+                            throw new ASMException(e);
                         }
                         if( wire.isDebugEnabled() ) {
                             wire.debug(json);
                         }
                         wire.debug("");
-                        throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), json);
+                        throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), json);
                     }
                     else {
                         HttpEntity entity = response.getEntity();
@@ -698,7 +698,7 @@ public class RESTMethod {
                             json = EntityUtils.toString(entity);
                         }
                         catch( IOException e ) {
-                            throw new CloudProviderException(e);
+                            throw new ASMException(e);
                         }
                         if( wire.isDebugEnabled() ) {
                             wire.debug(json);
@@ -836,19 +836,19 @@ public class RESTMethod {
                         HttpEntity entity = response.getEntity();
 
                         if( entity == null ) {
-                            throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
+                            throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
                         }
                         try {
                             json = EntityUtils.toString(entity);
                         }
                         catch( IOException e ) {
-                            throw new CloudProviderException(e);
+                            throw new ASMException(e);
                         }
                         if( wire.isDebugEnabled() ) {
                             wire.debug(json);
                         }
                         wire.debug("");
-                        throw new CloudProviderException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), json);
+                        throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), json);
                     }
                     else {
                         HttpEntity entity = response.getEntity();
@@ -860,7 +860,7 @@ public class RESTMethod {
                             json = EntityUtils.toString(entity);
                         }
                         catch( IOException e ) {
-                            throw new CloudProviderException(e);
+                            throw new ASMException(e);
                         }
                         if( wire.isDebugEnabled() ) {
                             wire.debug(json);
