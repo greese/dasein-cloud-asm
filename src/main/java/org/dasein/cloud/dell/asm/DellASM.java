@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012-2013 Dell, Inc.
+ * Copyright (C) 2013 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -17,7 +17,7 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.skeleton;
+package org.dasein.cloud.dell.asm;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.AbstractCloud;
@@ -31,8 +31,8 @@ import javax.annotation.Nullable;
  * @version 2013.01 initial version
  * @since 2013.01
  */
-public class MyCloud extends AbstractCloud {
-    static private final Logger logger = getLogger(MyCloud.class);
+public class DellASM extends AbstractCloud {
+    static private final Logger logger = getLogger(DellASM.class);
 
     static private @Nonnull String getLastItem(@Nonnull String name) {
         int idx = name.lastIndexOf('.');
@@ -49,27 +49,27 @@ public class MyCloud extends AbstractCloud {
     static public @Nonnull Logger getLogger(@Nonnull Class<?> cls) {
         String pkg = getLastItem(cls.getPackage().getName());
 
-        if( pkg.equals("skeleton") ) {
+        if( pkg.equals("asm") ) {
             pkg = "";
         }
         else {
             pkg = pkg + ".";
         }
-        return Logger.getLogger("dasein.cloud.skeleton.std." + pkg + getLastItem(cls.getName()));
+        return Logger.getLogger("dasein.cloud.asm.std." + pkg + getLastItem(cls.getName()));
     }
 
     static public @Nonnull Logger getWireLogger(@Nonnull Class<?> cls) {
-        return Logger.getLogger("dasein.cloud.skeleton.wire." + getLastItem(cls.getPackage().getName()) + "." + getLastItem(cls.getName()));
+        return Logger.getLogger("dasein.cloud.asm.wire." + getLastItem(cls.getPackage().getName()) + "." + getLastItem(cls.getName()));
     }
 
-    public MyCloud() { }
+    public DellASM() { }
 
     @Override
     public @Nonnull String getCloudName() {
         ProviderContext ctx = getContext();
         String name = (ctx == null ? null : ctx.getCloudName());
 
-        return (name == null ? "MyCloud" : name);
+        return (name == null ? "DellASM" : name);
     }
 
     @Override
@@ -82,13 +82,13 @@ public class MyCloud extends AbstractCloud {
         ProviderContext ctx = getContext();
         String name = (ctx == null ? null : ctx.getProviderName());
 
-        return (name == null ? "MyCloud" : name);
+        return (name == null ? "DellASM" : name);
     }
 
     @Override
     public @Nullable String testContext() {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + MyCloud.class.getName() + ".testContext()");
+            logger.trace("ENTER - " + DellASM.class.getName() + ".testContext()");
         }
         try {
             ProviderContext ctx = getContext();
@@ -98,7 +98,7 @@ public class MyCloud extends AbstractCloud {
                 return null;
             }
             try {
-                // TODO: Go to MyCloud and verify that the specified credentials in the context are correct
+                // TODO: Go to DellASM and verify that the specified credentials in the context are correct
                 // return null if they are not
                 // return an account number if they are
                 return null;
@@ -111,7 +111,7 @@ public class MyCloud extends AbstractCloud {
         }
         finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT - " + MyCloud.class.getName() + ".textContext()");
+                logger.trace("EXIT - " + DellASM.class.getName() + ".textContext()");
             }
         }
     }

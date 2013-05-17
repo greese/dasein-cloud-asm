@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012-2013 Dell, Inc.
+ * Copyright (C) 2013 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -17,7 +17,7 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.skeleton;
+package org.dasein.cloud.dell.asm;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
@@ -40,17 +40,17 @@ import java.util.Collection;
 import java.util.Locale;
 
 /**
- * Unimplemented skeleton class
+ * Unimplemented asm class
  * @author INSERT NAME HERE
  * @version 2013.01 initial version
  * @since 2013.01
  */
 public class DataCenters implements DataCenterServices {
-    static private final Logger logger = MyCloud.getLogger(DataCenters.class);
+    static private final Logger logger = DellASM.getLogger(DataCenters.class);
 
-    private MyCloud provider;
+    private DellASM provider;
 
-    DataCenters(@Nonnull MyCloud provider) { this.provider = provider; }
+    DataCenters(@Nonnull DellASM provider) { this.provider = provider; }
 
     @Override
     public @Nullable DataCenter getDataCenter(@Nonnull String dataCenterId) throws InternalException, CloudException {

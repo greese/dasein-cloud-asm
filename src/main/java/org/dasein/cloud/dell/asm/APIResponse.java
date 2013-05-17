@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012-2013 Dell, Inc.
+ * Copyright (C) 2013 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -17,7 +17,7 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.skeleton;
+package org.dasein.cloud.dell.asm;
 
 import org.dasein.cloud.CloudException;
 import org.dasein.util.CalendarWrapper;

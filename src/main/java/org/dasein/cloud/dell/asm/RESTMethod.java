@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012-2013 Dell, Inc.
+ * Copyright (C) 2013 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -17,7 +17,7 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.skeleton;
+package org.dasein.cloud.dell.asm;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
@@ -74,8 +74,8 @@ import java.util.Properties;
  * @since 2013.01
  */
 public class RESTMethod {
-    static private final Logger logger = MyCloud.getLogger(RESTMethod.class);
-    static private final Logger wire   = MyCloud.getWireLogger(RESTMethod.class);
+    static private final Logger logger = DellASM.getLogger(RESTMethod.class);
+    static private final Logger wire   = DellASM.getWireLogger(RESTMethod.class);
 
     static private final String ACCESS_KEY_HEADER = "x-access-key";
     static private final String SIGNATURE_HEADER  = "x-signature";
@@ -88,9 +88,9 @@ public class RESTMethod {
     static public final int NO_CONTENT     = 204;
     static public final int NOT_FOUND      = 404;
 
-    private MyCloud provider;
+    private DellASM provider;
 
-    public RESTMethod(@Nonnull MyCloud provider) { this.provider = provider; }
+    public RESTMethod(@Nonnull DellASM provider) { this.provider = provider; }
 
     public void delete(@Nonnull String resource, @Nonnull String id, @Nullable NameValuePair ... parameters) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
@@ -503,8 +503,8 @@ public class RESTMethod {
         String endpoint = ctx.getEndpoint();
 
         if( endpoint == null ) {
-            logger.error("Null endpoint for the MyCloud cloud");
-            throw new ConfigurationException("Null endpoint for MyCloud cloud");
+            logger.error("Null endpoint for the DellASM cloud");
+            throw new ConfigurationException("Null endpoint for DellASM cloud");
         }
        while( endpoint.endsWith("/") && !endpoint.equals("/") ) {
            endpoint = endpoint.substring(0, endpoint.length()-1);

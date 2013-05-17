@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2012-2013 Dell, Inc.
+ * Copyright (C) 2013 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -17,25 +17,16 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.skeleton;
-
-import org.dasein.cloud.CloudException;
-
-import javax.annotation.Nonnull;
+package org.dasein.cloud.dell.asm;
 
 /**
- * An error in configuring MyCloud's context in some manner.
+ * Simple error representing a failure to set up a configuration.
  * <p>Created by George Reese: 12/06/2012 9:44 AM</p>
  * @author George Reese
- * @version 2013.1 initial version
- * @since 2013.1
+ * @version 2013.01 initial version
+ * @since 2013.01
  */
-public class ConfigurationException extends CloudException {
-    public ConfigurationException(@Nonnull String message) {
-        super(message);
-    }
-
-    public ConfigurationException(@Nonnull Throwable cause) {
-        super(cause);
-    }
+public class NoContextException extends ConfigurationException {
+    public NoContextException() { super("No context was set for this request"); }
 }
+
