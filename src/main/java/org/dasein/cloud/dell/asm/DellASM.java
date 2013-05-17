@@ -27,9 +27,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Add header info here
- * @version 2013.01 initial version
- * @since 2013.01
+ * Bootstrap class for interacting with Dell ASM per the Dasein Cloud API.
+ * @author George Reese
+ * @version 2013.04 initial version
+ * @since 2013.04
  */
 public class DellASM extends AbstractCloud {
     static private final Logger logger = getLogger(DellASM.class);
@@ -46,6 +47,11 @@ public class DellASM extends AbstractCloud {
         return name.substring(idx + 1);
     }
 
+    /**
+     * Provides access to a log4j logger aligned with the naming conventions for standard Dasein Cloud logging.
+     * @param cls the class in which logging is being done
+     * @return a log4j logger that handles standard message logging
+     */
     static public @Nonnull Logger getLogger(@Nonnull Class<?> cls) {
         String pkg = getLastItem(cls.getPackage().getName());
 
@@ -58,10 +64,19 @@ public class DellASM extends AbstractCloud {
         return Logger.getLogger("dasein.cloud.dell.asm.std." + pkg + getLastItem(cls.getName()));
     }
 
+    /**
+     * Provides access to a log4j logger aligned with the naming conventions for Dasein Cloud wire logging. The wire logging
+     * is solely for logging data going over the network and not for internal messaging.
+     * @param cls the class in which the wire logging is being done
+     * @return the log4j logger that handles wire message logging
+     */
     static public @Nonnull Logger getWireLogger(@Nonnull Class<?> cls) {
         return Logger.getLogger("dasein.cloud.dell.asm.wire." + getLastItem(cls.getPackage().getName()) + "." + getLastItem(cls.getName()));
     }
 
+    /**
+     * Empty constructor to create an instance of the {@link DellASM} cloud provider class.
+     */
     public DellASM() { }
 
     @Override
