@@ -33,11 +33,21 @@ import javax.annotation.Nonnull;
  * @since 2013.04
  */
 public class ASMException extends CloudException {
-
+    /**
+     * Constructs an ASM exception based on a prior exception.
+     * @param cause the prior exception causing the ASM exception to be raised
+     */
     public ASMException(@Nonnull Throwable cause) {
         super(cause);
     }
 
+    /**
+     * Constructs an ASM exception based on a response from Dell ASM.
+     * @param type the type of exception being raised
+     * @param httpCode the HTTP code returned Dell ASM
+     * @param providerCode the ASM-specific error code
+     * @param message an error message describing the error
+     */
     public ASMException(@Nonnull CloudErrorType type, @Nonnegative int httpCode, @Nonnull String providerCode, @Nonnull String message) {
         super(type, httpCode, providerCode, message);
     }

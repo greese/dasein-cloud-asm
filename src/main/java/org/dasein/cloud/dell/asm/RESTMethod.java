@@ -19,7 +19,6 @@
 
 package org.dasein.cloud.dell.asm;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -28,13 +27,11 @@ import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
@@ -66,7 +63,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
@@ -92,7 +88,14 @@ public class RESTMethod {
 
     public RESTMethod(@Nonnull DellASM provider) { this.provider = provider; }
 
-    private @Nonnull String authenticate() throws CloudException, InternalException {
+    /**
+     * Performs authentication against Dell ASM.
+     * @param ctx the context for authenticating this request
+     * @return the connection ID resulting from the Dell ASM authentication
+     * @throws CloudException an error occurred authentication with Dell ASM
+     * @throws InternalException an internal error occurred generating the request to Dell ASM
+     */
+    private @Nonnull String authenticate(@Nonnull ProviderContext ctx) throws CloudException, InternalException {
         StringBuilder xml = new StringBuilder();
 
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -122,6 +125,12 @@ public class RESTMethod {
         throw new ASMException(CloudErrorType.AUTHENTICATION, response.getCode(), String.valueOf(response.getCode()), doc.toString());
     }
 
+    /**
+     * Provides the currently authenticated connection ID, if one exists. If not, it will authenticate and cache that connection ID.
+     * @return a valid connection ID for executing API operations against Dell ASM
+     * @throws CloudException an error occurred authentication with Dell ASM
+     * @throws InternalException an internal error occurred generating the request to Dell ASM
+     */
     public @Nonnull String getConnectionId() throws CloudException, InternalException {
         ProviderContext ctx = provider.getContext();
 
@@ -141,137 +150,13 @@ public class RESTMethod {
             }
         }
         if( connectionId == null ) {
-            connectionId = authenticate();
+            connectionId = authenticate(ctx);
+            cache.put(ctx, Collections.singletonList(connectionId));
         }
         return connectionId;
     }
 
     /*
-    public void delete(@Nonnull String resource, @Nonnull String id, @Nullable NameValuePair ... parameters) throws InternalException, CloudException {
-        if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + RESTMethod.class.getName() + ".delete(" + resource + "," + id + "," + Arrays.toString(parameters) + ")");
-        }
-        try {
-            String target = getEndpoint(resource, id, parameters);
-
-            if( wire.isDebugEnabled() ) {
-                wire.debug("");
-                wire.debug(">>> [DELETE (" + (new Date()) + ")] -> " + target + " >--------------------------------------------------------------------------------------");
-            }
-            try {
-                URI uri;
-
-                try {
-                    uri = new URI(target);
-                }
-                catch( URISyntaxException e ) {
-                    throw new ConfigurationException(e);
-                }
-                HttpClient client = getClient(uri);
-
-                try {
-                    ProviderContext ctx = provider.getContext();
-
-                    if( ctx == null ) {
-                        throw new NoContextException();
-                    }
-                    HttpDelete delete = new HttpDelete(target);
-
-                    long timestamp = System.currentTimeMillis();
-
-                    String signature = getSignature(ctx.getAccessPublic(), ctx.getAccessPrivate(), "DELETE", resource, id, timestamp);
-
-                    try {
-                        delete.addHeader(ACCESS_KEY_HEADER, new String(ctx.getAccessPublic(), "utf-8"));
-                    }
-                    catch( UnsupportedEncodingException e ) {
-                        throw new InternalException(e);
-                    }
-                    delete.addHeader("Accept", "application/json");
-                    delete.addHeader(SIGNATURE_HEADER, signature);
-                    delete.addHeader(VERSION_HEADER, VERSION);
-
-                    if( wire.isDebugEnabled() ) {
-                        wire.debug(delete.getRequestLine().toString());
-                        for( Header header : delete.getAllHeaders() ) {
-                            wire.debug(header.getName() + ": " + header.getValue());
-                        }
-                        wire.debug("");
-                    }
-                    HttpResponse response;
-                    StatusLine status;
-
-                    try {
-                        APITrace.trace(provider, "DELETE " + resource);
-                        response = client.execute(delete);
-                        status = response.getStatusLine();
-                    }
-                    catch( IOException e ) {
-                        logger.error("Failed to execute HTTP request due to a cloud I/O error: " + e.getMessage());
-                        throw new CloudException(e);
-                    }
-                    if( logger.isDebugEnabled() ) {
-                        logger.debug("HTTP Status " + status);
-                    }
-                    Header[] headers = response.getAllHeaders();
-
-                    if( wire.isDebugEnabled() ) {
-                        wire.debug(status.toString());
-                        for( Header h : headers ) {
-                            if( h.getValue() != null ) {
-                                wire.debug(h.getName() + ": " + h.getValue().trim());
-                            }
-                            else {
-                                wire.debug(h.getName() + ":");
-                            }
-                        }
-                        wire.debug("");
-                    }
-                    if( status.getStatusCode() == NOT_FOUND ) {
-                        throw new CloudException("No such endpoint: " + target);
-                    }
-                    if( status.getStatusCode() != NO_CONTENT ) {
-                        logger.error("Expected NO CONTENT for DELETE request, got " + status.getStatusCode());
-                        HttpEntity entity = response.getEntity();
-
-                        if( entity == null ) {
-                            throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
-                        }
-                        String body;
-
-                        try {
-                            body = EntityUtils.toString(entity);
-                        }
-                        catch( IOException e ) {
-                            throw new ASMException(e);
-                        }
-                        if( wire.isDebugEnabled() ) {
-                            wire.debug(body);
-                        }
-                        wire.debug("");
-                        throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), body);
-                    }
-                }
-                finally {
-                    try { client.getConnectionManager().shutdown(); }
-                    catch( Throwable ignore ) { }
-                }
-            }
-            finally {
-                if( wire.isDebugEnabled() ) {
-                    wire.debug("<<< [DELETE (" + (new Date()) + ")] -> " + target + " <--------------------------------------------------------------------------------------");
-                    wire.debug("");
-                }
-            }
-        }
-        finally {
-            if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT - " + RESTMethod.class.getName() + ".delete()");
-            }
-        }
-    }
-    */
-
     public @Nonnull APIResponse get(final @Nonnull String operation, final @Nonnull String resource, final @Nullable String id, final @Nullable NameValuePair ... parameters) {
         final APIResponse response = new APIResponse();
 
@@ -482,73 +367,7 @@ public class RESTMethod {
             }
         }
     }
-
-    private void parseError(@Nullable APIResponse apiResponse, @Nonnull HttpEntity entity, int httpCode, @Nonnull String defaultReason) throws ASMException, InternalException {
-        String reason = defaultReason;
-        String body;
-
-        try {
-            body = EntityUtils.toString(entity);
-
-            Document doc = parseResponse(body);
-
-            if( wire.isDebugEnabled() ) {
-                wire.debug(body);
-            }
-            wire.debug("");
-            NodeList errors = doc.getElementsByTagName("error");
-
-            if( errors != null && errors.getLength() > 0 ) {
-                Node error = errors.item(0);
-
-                if( error.hasAttributes() ) {
-                    Node code = error.getAttributes().getNamedItem("code");
-                    Node message = error.getAttributes().getNamedItem("message");
-
-                    if( code != null ) {
-                        reason = code.getNodeValue().trim();
-                    }
-                    if( message != null ) {
-                        body = message.getNodeValue().trim();
-                    }
-                }
-            }
-        }
-        catch( IOException e ) {
-            throw new ASMException(e);
-        }
-        if( apiResponse != null ) {
-            apiResponse.receive(new ASMException(CloudErrorType.GENERAL, httpCode, reason, body));
-        }
-        else {
-            throw new ASMException(CloudErrorType.GENERAL, httpCode, reason, body);
-        }
-    }
-
-    private @Nonnull Document parseResponse(@Nonnull String responseBody) throws ASMException, InternalException {
-        try {
-            if( wire.isDebugEnabled() ) {
-                String[] lines = responseBody.split("\n");
-
-                if( lines.length < 1 ) {
-                    lines = new String[] { responseBody };
-                }
-                for( String l : lines ) {
-                    wire.debug(l);
-                }
-            }
-            return XMLParser.parse(new ByteArrayInputStream(responseBody.getBytes()));
-        }
-        catch( IOException e ) {
-            throw new ASMException(e);
-        }
-        catch( ParserConfigurationException e ) {
-            throw new InternalException(e);
-        }
-        catch( SAXException e ) {
-            throw new ASMException(e);
-        }
-    }
+    */
 
     private @Nonnull HttpClient getClient(URI uri) throws InternalException, CloudException {
         ProviderContext ctx = provider.getContext();
@@ -630,6 +449,82 @@ public class RESTMethod {
         return endpoint;
     }
 
+
+    private void parseError(@Nullable APIResponse apiResponse, @Nonnull HttpEntity entity, int httpCode, @Nonnull String defaultReason) throws ASMException, InternalException {
+        String reason = defaultReason;
+        String body;
+
+        try {
+            body = EntityUtils.toString(entity);
+
+            Document doc = parseResponse(body);
+
+            if( wire.isDebugEnabled() ) {
+                wire.debug(body);
+            }
+            wire.debug("");
+            NodeList errors = doc.getElementsByTagName("error");
+
+            if( errors != null && errors.getLength() > 0 ) {
+                Node error = errors.item(0);
+
+                if( error.hasAttributes() ) {
+                    Node code = error.getAttributes().getNamedItem("code");
+                    Node message = error.getAttributes().getNamedItem("message");
+
+                    if( code != null ) {
+                        reason = code.getNodeValue().trim();
+                    }
+                    if( message != null ) {
+                        body = message.getNodeValue().trim();
+                    }
+                }
+            }
+        }
+        catch( IOException e ) {
+            throw new ASMException(e);
+        }
+        if( apiResponse != null ) {
+            apiResponse.receive(new ASMException(CloudErrorType.GENERAL, httpCode, reason, body));
+        }
+        else {
+            throw new ASMException(CloudErrorType.GENERAL, httpCode, reason, body);
+        }
+    }
+
+    private @Nonnull Document parseResponse(@Nonnull String responseBody) throws ASMException, InternalException {
+        try {
+            if( wire.isDebugEnabled() ) {
+                String[] lines = responseBody.split("\n");
+
+                if( lines.length < 1 ) {
+                    lines = new String[] { responseBody };
+                }
+                for( String l : lines ) {
+                    wire.debug(l);
+                }
+            }
+            return XMLParser.parse(new ByteArrayInputStream(responseBody.getBytes()));
+        }
+        catch( IOException e ) {
+            throw new ASMException(e);
+        }
+        catch( ParserConfigurationException e ) {
+            throw new InternalException(e);
+        }
+        catch( SAXException e ) {
+            throw new ASMException(e);
+        }
+    }
+
+    /**
+     * Posts to the specified resource with the specified XML payload.
+     * @param resource the resource being POSTed to
+     * @param xml an XML document to post
+     * @return the API response from Dell ASM
+     * @throws InternalException an error occurred internally while processing the request
+     * @throws CloudException an error occurred in Dell ASM executing the request
+     */
     public @Nonnull APIResponse post(@Nonnull String resource, @Nonnull String xml) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + RESTMethod.class.getName() + ".post(" + resource + "," + xml + ")");

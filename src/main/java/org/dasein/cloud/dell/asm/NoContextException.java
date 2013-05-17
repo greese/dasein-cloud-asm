@@ -27,6 +27,9 @@ package org.dasein.cloud.dell.asm;
  * @since 2013.04
  */
 public class NoContextException extends ConfigurationException {
+    /**
+     * Constructs an exception representing the lack of context.
+     */
     public NoContextException() { super("No context was set for this request"); }
 }
 

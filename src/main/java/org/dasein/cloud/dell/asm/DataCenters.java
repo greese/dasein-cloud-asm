@@ -40,10 +40,10 @@ import java.util.Collection;
 import java.util.Locale;
 
 /**
- * Unimplemented asm class
- * @author INSERT NAME HERE
- * @version 2013.01 initial version
- * @since 2013.01
+ * Describes the topology of a converged infrastructure managed by Dell ASM.
+ * @author George Reese
+ * @version 2013.04 initial version
+ * @since 2013.04
  */
 public class DataCenters implements DataCenterServices {
     static private final Logger logger = DellASM.getLogger(DataCenters.class);
