@@ -21,10 +21,10 @@ package org.dasein.cloud.dell.asm;
 
 /**
  * Simple error representing a failure to set up a configuration.
- * <p>Created by George Reese: 12/06/2012 9:44 AM</p>
+ * <p>Created by George Reese: 05/17/2013 9:36 AM</p>
  * @author George Reese
- * @version 2013.01 initial version
- * @since 2013.01
+ * @version 2013.04 initial version
+ * @since 2013.04
  */
 public class NoContextException extends ConfigurationException {
     public NoContextException() { super("No context was set for this request"); }
