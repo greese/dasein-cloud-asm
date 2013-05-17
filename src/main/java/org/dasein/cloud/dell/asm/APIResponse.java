@@ -22,6 +22,7 @@ package org.dasein.cloud.dell.asm;
 import org.dasein.cloud.CloudException;
 import org.dasein.util.CalendarWrapper;
 import org.json.JSONObject;
+import org.w3c.dom.Document;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,10 +35,13 @@ import java.io.InputStream;
  * @since 2013.01
  */
 public class APIResponse {
-    private int code;
-    private JSONObject json;
+    static public enum ResponseType { XML, JSON, RAW, NONE }
+
+    private int         code;
+    private Boolean     complete;
+    private JSONObject  json;
     private InputStream data;
-    private Boolean complete;
+    private Document    xml;
 
     private CloudException error;
     private APIResponse next;
@@ -57,7 +61,7 @@ public class APIResponse {
         }
     }
 
-    public InputStream getData() throws CloudException {
+    public @Nullable InputStream getData() throws CloudException {
         synchronized( this ) {
             while( complete == null && error == null ) {
                 try { wait(CalendarWrapper.MINUTE); }
@@ -70,7 +74,7 @@ public class APIResponse {
         }
     }
 
-    public JSONObject getJSON() throws CloudException {
+    public @Nullable JSONObject getJSON() throws CloudException {
         synchronized( this ) {
             while( complete == null && error ==null ) {
                 try { wait(CalendarWrapper.MINUTE); }
@@ -80,6 +84,41 @@ public class APIResponse {
                 throw error;
             }
             return json;
+        }
+    }
+
+    public @Nonnull ResponseType getResponseType() throws CloudException {
+        synchronized( this ) {
+            while( complete == null && error ==null ) {
+                try { wait(CalendarWrapper.MINUTE); }
+                catch( InterruptedException ignore ) { }
+            }
+            if( error != null ) {
+                throw error;
+            }
+            if( json != null ) {
+                return ResponseType.JSON;
+            }
+            if( xml != null ) {
+                return ResponseType.XML;
+            }
+            if( data != null ) {
+                return ResponseType.RAW;
+            }
+            return ResponseType.NONE;
+        }
+    }
+
+    public @Nullable Document getXML() throws CloudException {
+        synchronized( this ) {
+            while( complete == null && error ==null ) {
+                try { wait(CalendarWrapper.MINUTE); }
+                catch( InterruptedException ignore ) { }
+            }
+            if( error != null ) {
+                throw error;
+            }
+            return xml;
         }
     }
 
@@ -149,6 +188,15 @@ public class APIResponse {
         synchronized( this ) {
             this.code = statusCode;
             this.json = json;
+            this.complete = complete;
+            notifyAll();
+        }
+    }
+
+    void receive(int statusCode, @Nonnull Document xml, boolean complete) {
+        synchronized( this ) {
+            this.code = statusCode;
+            this.xml = xml;
             this.complete = complete;
             notifyAll();
         }
