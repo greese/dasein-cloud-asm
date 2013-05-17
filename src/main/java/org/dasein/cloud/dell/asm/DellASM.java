@@ -55,11 +55,11 @@ public class DellASM extends AbstractCloud {
         else {
             pkg = pkg + ".";
         }
-        return Logger.getLogger("dasein.cloud.asm.std." + pkg + getLastItem(cls.getName()));
+        return Logger.getLogger("dasein.cloud.dell.asm.std." + pkg + getLastItem(cls.getName()));
     }
 
     static public @Nonnull Logger getWireLogger(@Nonnull Class<?> cls) {
-        return Logger.getLogger("dasein.cloud.asm.wire." + getLastItem(cls.getPackage().getName()) + "." + getLastItem(cls.getName()));
+        return Logger.getLogger("dasein.cloud.dell.asm.wire." + getLastItem(cls.getPackage().getName()) + "." + getLastItem(cls.getName()));
     }
 
     public DellASM() { }
@@ -69,7 +69,7 @@ public class DellASM extends AbstractCloud {
         ProviderContext ctx = getContext();
         String name = (ctx == null ? null : ctx.getCloudName());
 
-        return (name == null ? "DellASM" : name);
+        return (name == null ? "Dell ASM CI" : name);
     }
 
     @Override
@@ -79,10 +79,7 @@ public class DellASM extends AbstractCloud {
 
     @Override
     public @Nonnull String getProviderName() {
-        ProviderContext ctx = getContext();
-        String name = (ctx == null ? null : ctx.getProviderName());
-
-        return (name == null ? "DellASM" : name);
+        return "Dell ASM";
     }
 
     @Override
