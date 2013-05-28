@@ -58,7 +58,7 @@ public class DataCenters implements DataCenterServices {
     @Override
     public @Nullable DataCenter getDataCenter(@Nonnull String dataCenterId) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER: " + getClass().getName() + ".getDataCenter(" + dataCenterId + ")");
+            logger.trace("ENTER: " + DataCenters.class.getName() + ".getDataCenter(" + dataCenterId + ")");
         }
         try {
             for( Region region : listRegions() ) {
@@ -78,7 +78,7 @@ public class DataCenters implements DataCenterServices {
         }
         finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT: " + getClass().getName() + ".getDataCenter()");
+                logger.trace("EXIT: " + DataCenters.class.getName() + ".getDataCenter()");
             }
         }
     }
@@ -96,7 +96,7 @@ public class DataCenters implements DataCenterServices {
     @Override
     public @Nullable Region getRegion(@Nonnull String providerRegionId) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER: " + getClass().getName() + ".getRegion(" + providerRegionId + ")");
+            logger.trace("ENTER: " + DataCenters.class.getName() + ".getRegion(" + providerRegionId + ")");
         }
         try {
             for( Region r : listRegions() ) {
@@ -114,7 +114,7 @@ public class DataCenters implements DataCenterServices {
         }
         finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT: " + getClass().getName() + ".getRegion()");
+                logger.trace("EXIT: " + DataCenters.class.getName() + ".getRegion()");
             }
         }
     }
@@ -124,7 +124,7 @@ public class DataCenters implements DataCenterServices {
         APITrace.begin(provider, "listDataCenters");
         try {
             if( logger.isTraceEnabled() ) {
-                logger.trace("ENTER: " + getClass().getName() + ".listDataCenters(" + providerRegionId + ")");
+                logger.trace("ENTER: " + DataCenters.class.getName() + ".listDataCenters(" + providerRegionId + ")");
             }
             try {
                 Region region = getRegion(providerRegionId);
@@ -166,7 +166,7 @@ public class DataCenters implements DataCenterServices {
             }
             finally {
                 if( logger.isTraceEnabled() ) {
-                    logger.trace("EXIT: " + getClass().getName() + ".listDataCenters()");
+                    logger.trace("EXIT: " + DataCenters.class.getName() + ".listDataCenters()");
                 }
             }
         }
@@ -180,7 +180,7 @@ public class DataCenters implements DataCenterServices {
         APITrace.begin(provider, "listRegions");
         try {
             if( logger.isTraceEnabled() ) {
-                logger.trace("ENTER: " + getClass().getName() + ".listRegions()");
+                logger.trace("ENTER: " + DataCenters.class.getName() + ".listRegions()");
             }
             try {
                 ProviderContext ctx = provider.getContext();
@@ -227,7 +227,7 @@ public class DataCenters implements DataCenterServices {
             }
             finally {
                 if( logger.isTraceEnabled() ) {
-                    logger.trace("EXIT: " + getClass().getName() + ".listRegions()");
+                    logger.trace("EXIT: " + DataCenters.class.getName() + ".listRegions()");
                 }
             }
         }

@@ -287,9 +287,18 @@ public class APIHandler {
      */
     public @Nonnull APIResponse post(@Nonnull String operation, @Nonnull String xml) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + APIHandler.class.getName() + ".post(" + xml + ")");
+            logger.trace("ENTER: " + APIHandler.class.getName() + ".post(" + xml + ")");
         }
         try {
+            if( logger.isDebugEnabled() ) {
+                try {
+                    XMLParser.parse(new ByteArrayInputStream(xml.getBytes("utf-8")));
+                    logger.debug("XML body is valid");
+                }
+                catch( Throwable t ) {
+                    logger.warn("Invalid XML being submitted to cloud: " + t.getMessage());
+                }
+            }
             String target = getEndpoint();
 
             if( wire.isDebugEnabled() ) {
@@ -410,7 +419,7 @@ public class APIHandler {
         }
         finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT - " + APIHandler.class.getName() + ".post()");
+                logger.trace("EXIT: " + APIHandler.class.getName() + ".post()");
             }
         }
     }

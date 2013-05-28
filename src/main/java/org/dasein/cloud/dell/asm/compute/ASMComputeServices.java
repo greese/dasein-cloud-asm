@@ -17,15 +17,13 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.dell.asm;
+package org.dasein.cloud.dell.asm.compute;
 
-import junit.framework.Test;
-
-import org.dasein.cloud.test.ComprehensiveTestSuite;
-import org.dasein.cloud.test.TestConfigurationException;
-
-public class MyCloudTestSuite {
-    static public Test suite() throws TestConfigurationException {
-        return new ComprehensiveTestSuite(DellASM.class);
-    }
+/**
+ * [Class Documentation]
+ * <p>Created by George Reese: 5/28/13 6:24 PM</p>
+ *
+ * @author George Reese
+ */
+public class ASMComputeServices {
 }
