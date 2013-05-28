@@ -191,7 +191,7 @@ public class APIResponse {
      */
     void receive() {
         synchronized( this ) {
-            this.code = RESTMethod.NOT_FOUND;
+            this.code = APIHandler.NOT_FOUND;
             this.complete = true;
             notifyAll();
         }

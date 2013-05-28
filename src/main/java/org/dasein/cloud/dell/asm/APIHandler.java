@@ -72,15 +72,15 @@ import java.util.Properties;
  * @version 2013.04 initial version
  * @since 2013.04
  */
-public class RESTMethod {
-    static private final Logger logger = DellASM.getLogger(RESTMethod.class);
-    static private final Logger wire   = DellASM.getWireLogger(RESTMethod.class);
+public class APIHandler {
+    static private final Logger logger = DellASM.getLogger(APIHandler.class);
+    static private final Logger wire   = DellASM.getWireLogger(APIHandler.class);
 
     static public final String OPEN_CONNECTION = "openconnection";
 
     private DellASM provider;
 
-    public RESTMethod(@Nonnull DellASM provider) { this.provider = provider; }
+    public APIHandler(@Nonnull DellASM provider) { this.provider = provider; }
 
     /**
      * Performs authentication against Dell ASM.
@@ -287,7 +287,7 @@ public class RESTMethod {
      */
     public @Nonnull APIResponse post(@Nonnull String operation, @Nonnull String xml) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + RESTMethod.class.getName() + ".post(" + xml + ")");
+            logger.trace("ENTER - " + APIHandler.class.getName() + ".post(" + xml + ")");
         }
         try {
             String target = getEndpoint();
@@ -410,7 +410,7 @@ public class RESTMethod {
         }
         finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT - " + RESTMethod.class.getName() + ".post()");
+                logger.trace("EXIT - " + APIHandler.class.getName() + ".post()");
             }
         }
     }
