@@ -25,6 +25,7 @@ import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.dc.DataCenter;
 import org.dasein.cloud.dc.DataCenterServices;
+import org.dasein.cloud.dc.Jurisdiction;
 import org.dasein.cloud.dc.Region;
 import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
@@ -40,7 +41,9 @@ import java.util.Collection;
 import java.util.Locale;
 
 /**
- * Describes the topology of a converged infrastructure managed by Dell ASM.
+ * Describes the topology of a converged infrastructure managed by Dell ASM. The current implementation hard-codes
+ * a single region with a single data center. The ID of the region and the ID of the data center are identical, with
+ * the ID of the region coming from the country for the default locale.
  * @author George Reese
  * @version 2013.04 initial version
  * @since 2013.04
@@ -54,14 +57,30 @@ public class DataCenters implements DataCenterServices {
 
     @Override
     public @Nullable DataCenter getDataCenter(@Nonnull String dataCenterId) throws InternalException, CloudException {
-        for( Region region : listRegions() ) {
-            for( DataCenter dc : listDataCenters(region.getProviderRegionId()) ) {
-                if( dataCenterId.equals(dc.getProviderDataCenterId()) ) {
-                    return dc;
+        if( logger.isTraceEnabled() ) {
+            logger.trace("ENTER: " + getClass().getName() + ".getDataCenter(" + dataCenterId + ")");
+        }
+        try {
+            for( Region region : listRegions() ) {
+                for( DataCenter dc : listDataCenters(region.getProviderRegionId()) ) {
+                    if( dataCenterId.equals(dc.getProviderDataCenterId()) ) {
+                        if( logger.isDebugEnabled() ) {
+                            logger.debug("getDataCenter(" + dataCenterId + ")=" + dc);
+                        }
+                        return dc;
+                    }
                 }
             }
+            if( logger.isDebugEnabled() ) {
+                logger.debug("getDataCenter(" + dataCenterId + ")=null");
+            }
+            return null;
         }
-        return null;
+        finally {
+            if( logger.isTraceEnabled() ) {
+                logger.trace("EXIT: " + getClass().getName() + ".getDataCenter()");
+            }
+        }
     }
 
     @Override
@@ -76,38 +95,80 @@ public class DataCenters implements DataCenterServices {
 
     @Override
     public @Nullable Region getRegion(@Nonnull String providerRegionId) throws InternalException, CloudException {
-        for( Region r : listRegions() ) {
-            if( providerRegionId.equals(r.getProviderRegionId()) ) {
-                return r;
+        if( logger.isTraceEnabled() ) {
+            logger.trace("ENTER: " + getClass().getName() + ".getRegion(" + providerRegionId + ")");
+        }
+        try {
+            for( Region r : listRegions() ) {
+                if( providerRegionId.equals(r.getProviderRegionId()) ) {
+                    if( logger.isDebugEnabled() ) {
+                        logger.debug("getRegion(" + providerRegionId + ")=" + r);
+                    }
+                    return r;
+                }
+            }
+            if( logger.isDebugEnabled() ) {
+                logger.debug("getRegion(" + providerRegionId + ")=null");
+            }
+            return null;
+        }
+        finally {
+            if( logger.isTraceEnabled() ) {
+                logger.trace("EXIT: " + getClass().getName() + ".getRegion()");
             }
         }
-        return null;
     }
 
     @Override
     public @Nonnull Collection<DataCenter> listDataCenters(@Nonnull String providerRegionId) throws InternalException, CloudException {
         APITrace.begin(provider, "listDataCenters");
         try {
-            Region region = getRegion(providerRegionId);
-
-            if( region == null ) {
-                throw new CloudException("No such region: " + providerRegionId);
+            if( logger.isTraceEnabled() ) {
+                logger.trace("ENTER: " + getClass().getName() + ".listDataCenters(" + providerRegionId + ")");
             }
-            ProviderContext ctx = provider.getContext();
+            try {
+                Region region = getRegion(providerRegionId);
 
-            if( ctx == null ) {
-                throw new NoContextException();
-            }
-            Cache<DataCenter> cache = Cache.getInstance(provider, "dataCenters", DataCenter.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Day>(1, TimePeriod.DAY));
-            Collection<DataCenter> dcList = (Collection<DataCenter>)cache.get(ctx);
+                if( region == null ) {
+                    logger.warn("Attempt to fetch data centers for non-existent region: " + providerRegionId);
+                    throw new CloudException("No such region: " + providerRegionId);
+                }
+                ProviderContext ctx = provider.getContext();
 
-            if( dcList != null ) {
-                return dcList;
+                if( ctx == null ) {
+                    logger.warn("Attempt to fetch data centers for " + providerRegionId + " with no context");
+                    throw new NoContextException();
+                }
+                Cache<DataCenter> cache = Cache.getInstance(provider, "dataCenters", DataCenter.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Day>(1, TimePeriod.DAY));
+                Collection<DataCenter> dcList = (Collection<DataCenter>)cache.get(ctx);
+
+                if( dcList != null ) {
+                    if( logger.isDebugEnabled() ) {
+                        logger.debug("listDataCenters(" + providerRegionId + ")=" + dcList);
+                    }
+                    return dcList;
+                }
+                ArrayList<DataCenter> dataCenters = new ArrayList<DataCenter>();
+
+                DataCenter dc = new DataCenter();
+
+                dc.setActive(true);
+                dc.setAvailable(true);
+                dc.setName(region.getName() + " (DC)");
+                dc.setProviderDataCenterId(region.getProviderRegionId());
+                dc.setRegionId(region.getProviderRegionId());
+                dataCenters.add(dc);
+                cache.put(ctx, dataCenters);
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("listDataCenters(" + providerRegionId + ")=" + dataCenters);
+                }
+                return dataCenters;
             }
-            ArrayList<DataCenter> dataCenters = new ArrayList<DataCenter>();
-            // TODO: query the API for the data center list
-            cache.put(ctx, dataCenters);
-            return dataCenters;
+            finally {
+                if( logger.isTraceEnabled() ) {
+                    logger.trace("EXIT: " + getClass().getName() + ".listDataCenters()");
+                }
+            }
         }
         finally {
             APITrace.end();
@@ -118,22 +179,57 @@ public class DataCenters implements DataCenterServices {
     public Collection<Region> listRegions() throws InternalException, CloudException {
         APITrace.begin(provider, "listRegions");
         try {
-            ProviderContext ctx = provider.getContext();
-
-            if( ctx == null ) {
-                throw new NoContextException();
+            if( logger.isTraceEnabled() ) {
+                logger.trace("ENTER: " + getClass().getName() + ".listRegions()");
             }
-            Cache<Region> cache = Cache.getInstance(provider, "regions", Region.class, CacheLevel.CLOUD_ACCOUNT, new TimePeriod<Hour>(10, TimePeriod.HOUR));
-            Collection<Region> regions = (Collection<Region>)cache.get(ctx);
+            try {
+                ProviderContext ctx = provider.getContext();
 
-            if( regions != null ) {
+                if( ctx == null ) {
+                    logger.warn("Attempt to fetch regions with no context");
+                    throw new NoContextException();
+                }
+                Cache<Region> cache = Cache.getInstance(provider, "regions", Region.class, CacheLevel.CLOUD_ACCOUNT, new TimePeriod<Hour>(10, TimePeriod.HOUR));
+                Collection<Region> regions = (Collection<Region>)cache.get(ctx);
+
+                if( regions != null ) {
+                    if( logger.isDebugEnabled() ) {
+                        logger.debug("listRegions()=" + regions);
+                    }
+                    return regions;
+                }
+                regions = new ArrayList<Region>();
+
+                Region region = new Region();
+
+                region.setActive(true);
+                region.setAvailable(true);
+                String ctry = Locale.getDefault().getCountry();
+
+                if( ctry == null || ctry.equals("")  ) {
+                    ctry = "US";
+                }
+                try {
+                    Jurisdiction.valueOf(ctry);
+                }
+                catch( Throwable ignore ) {
+                    ctry = "US";
+                }
+                region.setJurisdiction(ctry);
+                region.setName(ctry);
+                region.setProviderRegionId(ctry);
+                regions.add(region);
+                cache.put(ctx, regions);
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("listRegions()=" + regions);
+                }
                 return regions;
             }
-            regions = new ArrayList<Region>();
-            // TODO: query the API for the regions
-            cache.put(ctx, regions);
-            return regions;
-
+            finally {
+                if( logger.isTraceEnabled() ) {
+                    logger.trace("EXIT: " + getClass().getName() + ".listRegions()");
+                }
+            }
         }
         finally {
             APITrace.end();
