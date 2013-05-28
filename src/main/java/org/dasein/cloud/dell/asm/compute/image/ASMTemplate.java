@@ -19,11 +19,50 @@
 
 package org.dasein.cloud.dell.asm.compute.image;
 
+import org.dasein.cloud.CloudException;
+import org.dasein.cloud.InternalException;
+import org.dasein.cloud.compute.AbstractImageSupport;
+import org.dasein.cloud.compute.ImageClass;
+import org.dasein.cloud.compute.ImageFilterOptions;
+import org.dasein.cloud.compute.MachineImage;
+import org.dasein.cloud.dell.asm.DellASM;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Locale;
+
 /**
- * [Class Documentation]
+ * Implements support for ASM templates as Dasein Cloud images.
  * <p>Created by George Reese: 5/28/13 6:24 PM</p>
- *
  * @author George Reese
+ * @version 2013.07 initial version
+ * @since 2013.07
  */
-public class ASMTemplate {
+public class ASMTemplate extends AbstractImageSupport {
+    public ASMTemplate(@Nonnull DellASM provider) { super(provider); }
+
+    @Override
+    public MachineImage getImage(@Nonnull String providerImageId) throws CloudException, InternalException {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public @Nonnull String getProviderTermForImage(@Nonnull Locale locale, @Nonnull ImageClass cls) {
+        return "template";
+    }
+
+    @Override
+    public boolean isSubscribed() throws CloudException, InternalException {
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public @Nonnull Iterable<MachineImage> listImages(@Nullable ImageFilterOptions options) throws CloudException, InternalException {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void remove(@Nonnull String providerImageId, boolean checkState) throws CloudException, InternalException {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
 }

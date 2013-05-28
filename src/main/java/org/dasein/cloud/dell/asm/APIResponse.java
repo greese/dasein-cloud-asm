@@ -19,6 +19,7 @@
 
 package org.dasein.cloud.dell.asm;
 
+import org.apache.http.HttpStatus;
 import org.dasein.cloud.CloudException;
 import org.dasein.util.CalendarWrapper;
 import org.json.JSONObject;
@@ -191,7 +192,7 @@ public class APIResponse {
      */
     void receive() {
         synchronized( this ) {
-            this.code = APIHandler.NOT_FOUND;
+            this.code = HttpStatus.SC_NOT_FOUND;
             this.complete = true;
             notifyAll();
         }
