@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.dasein.cloud.AbstractCloud;
 import org.dasein.cloud.ProviderContext;
 
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -72,6 +73,11 @@ public class DellASM extends AbstractCloud {
      */
     static public @Nonnull Logger getWireLogger(@Nonnull Class<?> cls) {
         return Logger.getLogger("dasein.cloud.dell.asm.wire." + getLastItem(cls.getPackage().getName()) + "." + getLastItem(cls.getName()));
+    }
+
+    static public @Nonnegative long parseTimestamp(@Nonnull String ts) {
+        //
+        return 0L;
     }
 
     /**

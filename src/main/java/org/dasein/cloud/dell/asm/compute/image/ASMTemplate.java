@@ -19,16 +19,33 @@
 
 package org.dasein.cloud.dell.asm.compute.image;
 
+import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.compute.AbstractImageSupport;
+import org.dasein.cloud.compute.Architecture;
 import org.dasein.cloud.compute.ImageClass;
 import org.dasein.cloud.compute.ImageFilterOptions;
 import org.dasein.cloud.compute.MachineImage;
+import org.dasein.cloud.compute.MachineImageFormat;
+import org.dasein.cloud.compute.MachineImageState;
+import org.dasein.cloud.compute.Platform;
+import org.dasein.cloud.dell.asm.APIHandler;
+import org.dasein.cloud.dell.asm.APIResponse;
 import org.dasein.cloud.dell.asm.DellASM;
+import org.dasein.cloud.dell.asm.NoContextException;
+import org.dasein.cloud.util.APITrace;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
 
 /**
@@ -39,11 +56,41 @@ import java.util.Locale;
  * @since 2013.07
  */
 public class ASMTemplate extends AbstractImageSupport {
+    static private final Logger logger = DellASM.getLogger(ASMTemplate.class);
+
     public ASMTemplate(@Nonnull DellASM provider) { super(provider); }
 
     @Override
     public MachineImage getImage(@Nonnull String providerImageId) throws CloudException, InternalException {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        APITrace.trace(getProvider(), "getImage");
+        try {
+            if( logger.isTraceEnabled() ) {
+                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".getImage(" + providerImageId + ")");
+            }
+            try {
+                // TODO: optimize
+                for( MachineImage img : listImages((ImageFilterOptions)null) ) {
+                    if( img.getProviderMachineImageId().equals(providerImageId) ) {
+                        if( logger.isDebugEnabled() ) {
+                            logger.debug("getImage(" + providerImageId + ")=" + img);
+                        }
+                        return img;
+                    }
+                }
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("getImage(" + providerImageId + ")=null");
+                }
+                return null;
+            }
+            finally {
+                if( logger.isTraceEnabled() ) {
+                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".getImage()");
+                }
+            }
+        }
+        finally {
+            APITrace.end();
+        }
     }
 
     @Override
@@ -53,16 +100,136 @@ public class ASMTemplate extends AbstractImageSupport {
 
     @Override
     public boolean isSubscribed() throws CloudException, InternalException {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
+        return true;
     }
 
     @Override
     public @Nonnull Iterable<MachineImage> listImages(@Nullable ImageFilterOptions options) throws CloudException, InternalException {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        APITrace.trace(getProvider(), "listImages");
+        try {
+            if( logger.isTraceEnabled() ) {
+                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".listImages(" + options + ")");
+            }
+            try {
+                APIHandler handler = new APIHandler((DellASM)getProvider());
+                StringBuilder xml = new StringBuilder();
+
+                xml.append("<drl mode=\"normal\" connectionid=\"").append(handler.getConnectionId()).append("\">");
+                xml.append("<").append(APIHandler.ENUMERATE_ARCHIVE).append(" />");
+                xml.append("</drl>");
+
+                APIResponse response = handler.post(APIHandler.ENUMERATE_ARCHIVE, xml.toString());
+
+                Document doc = response.getXML();
+
+                if( doc == null ) {
+                    Collection<MachineImage> images = Collections.emptyList();
+
+                    if( logger.isDebugEnabled() ) {
+                        logger.debug("listImages(" + options + ")=" + images);
+                    }
+                    return images;
+                }
+                NodeList archives = doc.getElementsByTagName("archive");
+                ArrayList<MachineImage> images = new ArrayList<MachineImage>();
+
+                for( int i=0; i<archives.getLength(); i++ ) {
+                    Node archive = archives.item(i);
+                    MachineImage img = toImage(archive);
+
+                    if( img != null && (options == null || options.matches(img)) ) {
+                        images.add(img);
+                    }
+                }
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("listImages(" + options + ")=" + images);
+                }
+                return images;
+            }
+            finally {
+                if( logger.isTraceEnabled() ) {
+                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".listImages()");
+                }
+            }
+        }
+        finally {
+            APITrace.end();
+        }
     }
 
     @Override
     public void remove(@Nonnull String providerImageId, boolean checkState) throws CloudException, InternalException {
         //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    private @Nullable MachineImage toImage(@Nullable Node archive) throws CloudException, InternalException {
+        if( archive == null ) {
+            return null;
+        }
+        HashMap<String,String> tags = new HashMap<String, String>();
+        MachineImageState state = MachineImageState.PENDING;
+        Architecture architecture = Architecture.I64;
+        String regionId = getContext().getRegionId();
+        String ownerId = null, imageId = null;
+        String name = null, description = null;
+        Platform platform = Platform.UNKNOWN;
+        long created = 0L;
+
+        if( regionId == null ) {
+            throw new NoContextException();
+        }
+        if( archive.hasAttributes() ) {
+            NamedNodeMap attrs = archive.getAttributes();
+            Node n;
+
+            n = attrs.getNamedItem("name");
+            if( n != null ) {
+                name = n.getNodeValue().trim();
+            }
+            n = attrs.getNamedItem("description");
+            if( n != null ) {
+                description = n.getNodeValue().trim();
+            }
+            n = attrs.getNamedItem("owner");
+            if( n != null ) {
+                ownerId = n.getNodeValue().trim();
+            }
+            else {
+                ownerId = "--public--";
+            }
+            n = attrs.getNamedItem("importedtime");
+            if( n != null ) {
+                created = DellASM.parseTimestamp(n.getNodeValue().trim());
+            }
+            n = attrs.getNamedItem("devicemodel");
+            if( n != null ) {
+                tags.put("devicemodel", n.getNodeValue().trim());
+            }
+            n = attrs.getNamedItem("devicemanufacturer");
+            if( n != null ) {
+                tags.put("devicemanufacturer", n.getNodeValue().trim());
+            }
+            n = attrs.getNamedItem("isrecycled");
+            if( n != null ) {
+                tags.put("isrecycled", n.getNodeValue().trim());
+            }
+            n = attrs.getNamedItem("ismaster");
+            if( n != null ) {
+                tags.put("ismaster", n.getNodeValue().trim());
+            }
+        }
+        if( imageId == null ) {
+            return null;
+        }
+        if( name == null ) {
+            name = imageId;
+        }
+        if( description == null ) {
+            description = name;
+        }
+        MachineImage img = MachineImage.getMachineImageInstance(ownerId, regionId, imageId, state, name, description, architecture, platform, MachineImageFormat.RAW).createdAt(created);
+
+        img.setTags(tags);
+        return img;
     }
 }

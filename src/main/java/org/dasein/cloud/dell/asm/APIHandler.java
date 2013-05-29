@@ -76,7 +76,8 @@ public class APIHandler {
     static private final Logger logger = DellASM.getLogger(APIHandler.class);
     static private final Logger wire   = DellASM.getWireLogger(APIHandler.class);
 
-    static public final String OPEN_CONNECTION = "openconnection";
+    static public final String ENUMERATE_ARCHIVE = "enumeratearchive";
+    static public final String OPEN_CONNECTION   = "openconnection";
 
     private DellASM provider;
 
