@@ -22,6 +22,7 @@ package org.dasein.cloud.dell.asm;
 import org.apache.log4j.Logger;
 import org.dasein.cloud.AbstractCloud;
 import org.dasein.cloud.ProviderContext;
+import org.dasein.cloud.dell.asm.compute.ASMComputeServices;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -94,6 +95,11 @@ public class DellASM extends AbstractCloud {
     }
 
     @Override
+    public @Nonnull ASMComputeServices getComputeServices() {
+        return new ASMComputeServices(this);
+    }
+
+    @Override
     public @Nonnull DataCenters getDataCenterServices() {
         return new DataCenters(this);
     }
@@ -106,30 +112,38 @@ public class DellASM extends AbstractCloud {
     @Override
     public @Nullable String testContext() {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + DellASM.class.getName() + ".testContext()");
+            logger.trace("ENTER: " + DellASM.class.getName() + ".testContext()");
         }
         try {
             ProviderContext ctx = getContext();
 
             if( ctx == null ) {
                 logger.warn("No context was provided for testing");
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("testContext()=null");
+                }
                 return null;
             }
             try {
-                // TODO: Go to DellASM and verify that the specified credentials in the context are correct
-                // return null if they are not
-                // return an account number if they are
-                return null;
+                APIHandler handler = new APIHandler(this);
+
+                handler.authenticate(ctx);
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("testContext()=" + ctx.getAccountNumber());
+                }
+                return ctx.getAccountNumber();
             }
             catch( Throwable t ) {
                 logger.error("Error querying API key: " + t.getMessage());
-                t.printStackTrace();
+                if( logger.isDebugEnabled() ) {
+                    logger.debug("testContext()=null");
+                }
                 return null;
             }
         }
         finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT - " + DellASM.class.getName() + ".textContext()");
+                logger.trace("EXIT: " + DellASM.class.getName() + ".textContext()");
             }
         }
     }

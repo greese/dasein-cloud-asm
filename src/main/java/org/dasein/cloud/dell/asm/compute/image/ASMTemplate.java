@@ -22,14 +22,13 @@ package org.dasein.cloud.dell.asm.compute.image;
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
-import org.dasein.cloud.compute.AbstractImageSupport;
-import org.dasein.cloud.compute.Architecture;
-import org.dasein.cloud.compute.ImageClass;
-import org.dasein.cloud.compute.ImageFilterOptions;
-import org.dasein.cloud.compute.MachineImage;
-import org.dasein.cloud.compute.MachineImageFormat;
-import org.dasein.cloud.compute.MachineImageState;
-import org.dasein.cloud.compute.Platform;
+import org.dasein.cloud.OperationNotSupportedException;
+import org.dasein.cloud.compute.AbstractTopologySupport;
+import org.dasein.cloud.compute.Topology;
+import org.dasein.cloud.compute.TopologyFilterOptions;
+import org.dasein.cloud.compute.TopologyProvisionOptions;
+import org.dasein.cloud.compute.TopologyState;
+import org.dasein.cloud.compute.VirtualMachine;
 import org.dasein.cloud.dell.asm.APIHandler;
 import org.dasein.cloud.dell.asm.APIResponse;
 import org.dasein.cloud.dell.asm.DellASM;
@@ -55,36 +54,36 @@ import java.util.Locale;
  * @version 2013.07 initial version
  * @since 2013.07
  */
-public class ASMTemplate extends AbstractImageSupport {
+public class ASMTemplate extends AbstractTopologySupport<DellASM> {
     static private final Logger logger = DellASM.getLogger(ASMTemplate.class);
 
     public ASMTemplate(@Nonnull DellASM provider) { super(provider); }
 
     @Override
-    public MachineImage getImage(@Nonnull String providerImageId) throws CloudException, InternalException {
-        APITrace.trace(getProvider(), "getImage");
+    public Topology getTopology(@Nonnull String providerTopologyId) throws CloudException, InternalException {
+        APITrace.begin(getProvider(), "getTopology");
         try {
             if( logger.isTraceEnabled() ) {
-                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".getImage(" + providerImageId + ")");
+                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".getTopology(" + providerTopologyId + ")");
             }
             try {
                 // TODO: optimize
-                for( MachineImage img : listImages((ImageFilterOptions)null) ) {
-                    if( img.getProviderMachineImageId().equals(providerImageId) ) {
+                for( Topology t : listTopologies(null) ) {
+                    if( t.getProviderTopologyId().equals(providerTopologyId) ) {
                         if( logger.isDebugEnabled() ) {
-                            logger.debug("getImage(" + providerImageId + ")=" + img);
+                            logger.debug("getTopology(" + providerTopologyId + ")=" + t);
                         }
-                        return img;
+                        return t;
                     }
                 }
                 if( logger.isDebugEnabled() ) {
-                    logger.debug("getImage(" + providerImageId + ")=null");
+                    logger.debug("getTopology(" + providerTopologyId + ")=null");
                 }
                 return null;
             }
             finally {
                 if( logger.isTraceEnabled() ) {
-                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".getImage()");
+                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".getTopology()");
                 }
             }
         }
@@ -94,7 +93,7 @@ public class ASMTemplate extends AbstractImageSupport {
     }
 
     @Override
-    public @Nonnull String getProviderTermForImage(@Nonnull Locale locale, @Nonnull ImageClass cls) {
+    public @Nonnull String getProviderTermForTopology(@Nonnull Locale locale) {
         return "template";
     }
 
@@ -104,18 +103,21 @@ public class ASMTemplate extends AbstractImageSupport {
     }
 
     @Override
-    public @Nonnull Iterable<MachineImage> listImages(@Nullable ImageFilterOptions options) throws CloudException, InternalException {
-        APITrace.trace(getProvider(), "listImages");
+    public @Nonnull Iterable<Topology> listTopologies(@Nullable TopologyFilterOptions options) throws CloudException, InternalException {
+        APITrace.begin(getProvider(), "listTopologies");
         try {
             if( logger.isTraceEnabled() ) {
-                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".listImages(" + options + ")");
+                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".listTopologies(" + options + ")");
             }
             try {
-                APIHandler handler = new APIHandler((DellASM)getProvider());
+                APIHandler handler = new APIHandler(getProvider());
                 StringBuilder xml = new StringBuilder();
 
+                xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                xml.append("<!DOCTYPE drl SYSTEM \"").append(handler.getEndpoint()).append("/labmagic/v1_2/api/archive/enumerateArchiveRequest.dtd\">");
+
                 xml.append("<drl mode=\"normal\" connectionid=\"").append(handler.getConnectionId()).append("\">");
-                xml.append("<").append(APIHandler.ENUMERATE_ARCHIVE).append(" />");
+                xml.append("<").append(APIHandler.ENUMERATE_ARCHIVE).append(" type=\"TOPOLOGY\" fetch=\"deep\"").append("/>");
                 xml.append("</drl>");
 
                 APIResponse response = handler.post(APIHandler.ENUMERATE_ARCHIVE, xml.toString());
@@ -123,32 +125,32 @@ public class ASMTemplate extends AbstractImageSupport {
                 Document doc = response.getXML();
 
                 if( doc == null ) {
-                    Collection<MachineImage> images = Collections.emptyList();
+                    Collection<Topology> topologies = Collections.emptyList();
 
                     if( logger.isDebugEnabled() ) {
-                        logger.debug("listImages(" + options + ")=" + images);
+                        logger.debug("listTopologies(" + options + ")=" + topologies);
                     }
-                    return images;
+                    return topologies;
                 }
                 NodeList archives = doc.getElementsByTagName("archive");
-                ArrayList<MachineImage> images = new ArrayList<MachineImage>();
+                ArrayList<Topology> topologies = new ArrayList<Topology>();
 
                 for( int i=0; i<archives.getLength(); i++ ) {
                     Node archive = archives.item(i);
-                    MachineImage img = toImage(archive);
+                    Topology t = toTopology(archive);
 
-                    if( img != null && (options == null || options.matches(img)) ) {
-                        images.add(img);
+                    if( t != null && (options == null || options.matches(t)) ) {
+                        topologies.add(t);
                     }
                 }
                 if( logger.isDebugEnabled() ) {
-                    logger.debug("listImages(" + options + ")=" + images);
+                    logger.debug("listTopologies(" + options + ")=" + topologies);
                 }
-                return images;
+                return topologies;
             }
             finally {
                 if( logger.isTraceEnabled() ) {
-                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".listImages()");
+                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".listTopologies()");
                 }
             }
         }
@@ -158,21 +160,19 @@ public class ASMTemplate extends AbstractImageSupport {
     }
 
     @Override
-    public void remove(@Nonnull String providerImageId, boolean checkState) throws CloudException, InternalException {
-        //To change body of implemented methods use File | Settings | File Templates.
+    public @Nonnull Iterable<VirtualMachine> provision(@Nonnull TopologyProvisionOptions options) throws CloudException, InternalException {
+        throw new OperationNotSupportedException("Not yet supported");
     }
 
-    private @Nullable MachineImage toImage(@Nullable Node archive) throws CloudException, InternalException {
+    private @Nullable  Topology toTopology(@Nullable Node archive) throws CloudException, InternalException {
         if( archive == null ) {
             return null;
         }
         HashMap<String,String> tags = new HashMap<String, String>();
-        MachineImageState state = MachineImageState.PENDING;
-        Architecture architecture = Architecture.I64;
+        TopologyState state = TopologyState.OFFLINE;
         String regionId = getContext().getRegionId();
-        String ownerId = null, imageId = null;
+        String ownerId = null, topologyId = null;
         String name = null, description = null;
-        Platform platform = Platform.UNKNOWN;
         long created = 0L;
 
         if( regionId == null ) {
@@ -182,6 +182,10 @@ public class ASMTemplate extends AbstractImageSupport {
             NamedNodeMap attrs = archive.getAttributes();
             Node n;
 
+            n = attrs.getNamedItem("namespace");
+            if( n != null ) {
+                topologyId = n.getNodeValue().trim();
+            }
             n = attrs.getNamedItem("name");
             if( n != null ) {
                 name = n.getNodeValue().trim();
@@ -218,18 +222,18 @@ public class ASMTemplate extends AbstractImageSupport {
                 tags.put("ismaster", n.getNodeValue().trim());
             }
         }
-        if( imageId == null ) {
+        if( topologyId == null ) {
             return null;
         }
         if( name == null ) {
-            name = imageId;
+            name = topologyId;
         }
         if( description == null ) {
             description = name;
         }
-        MachineImage img = MachineImage.getMachineImageInstance(ownerId, regionId, imageId, state, name, description, architecture, platform, MachineImageFormat.RAW).createdAt(created);
+        Topology t = Topology.getInstance(ownerId, regionId, topologyId, state, name, description).createdAt(created);
 
-        img.setTags(tags);
-        return img;
+        t.setTags(tags);
+        return t;
     }
 }

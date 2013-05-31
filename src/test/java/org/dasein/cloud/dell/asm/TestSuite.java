@@ -19,13 +19,7 @@
 
 package org.dasein.cloud.dell.asm;
 
-import junit.framework.Test;
+import org.dasein.cloud.test.GlobalTestSuite;
 
-import org.dasein.cloud.test.ComprehensiveTestSuite;
-import org.dasein.cloud.test.TestConfigurationException;
-
-public class MyCloudTestSuite {
-    static public Test suite() throws TestConfigurationException {
-        return new ComprehensiveTestSuite(DellASM.class);
-    }
+public class TestSuite extends GlobalTestSuite {
 }

@@ -19,11 +19,26 @@
 
 package org.dasein.cloud.dell.asm.compute;
 
+import org.dasein.cloud.compute.AbstractComputeServices;
+import org.dasein.cloud.compute.ComputeServices;
+import org.dasein.cloud.dell.asm.DellASM;
+import org.dasein.cloud.dell.asm.compute.image.ASMTemplate;
+
+import javax.annotation.Nonnull;
+
 /**
  * [Class Documentation]
  * <p>Created by George Reese: 5/28/13 6:24 PM</p>
  *
  * @author George Reese
  */
-public class ASMComputeServices {
+public class ASMComputeServices extends AbstractComputeServices {
+    private DellASM provider;
+
+    public ASMComputeServices(DellASM provider) { this.provider = provider; }
+
+    @Override
+    public @Nonnull ASMTemplate getTopologySupport() {
+        return new ASMTemplate(provider);
+    }
 }

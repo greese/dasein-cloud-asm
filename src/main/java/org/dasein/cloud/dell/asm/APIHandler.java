@@ -54,7 +54,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -90,13 +89,14 @@ public class APIHandler {
      * @throws CloudException an error occurred authentication with Dell ASM
      * @throws InternalException an internal error occurred generating the request to Dell ASM
      */
-    private @Nonnull String authenticate(@Nonnull ProviderContext ctx) throws CloudException, InternalException {
+    public @Nonnull String authenticate(@Nonnull ProviderContext ctx) throws CloudException, InternalException {
         try {
             String user = new String(ctx.getAccessPublic(), "utf-8");
             String password = new String(ctx.getAccessPrivate(), "utf-8");
             StringBuilder xml = new StringBuilder();
 
             xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            xml.append("<!DOCTYPE drl SYSTEM \"").append(getEndpoint()).append("/labmagic/v1_2/api/connection/openConnectionRequest.dtd\">");
             xml.append("<drl mode=\"normal\">");
             xml.append("<").append(OPEN_CONNECTION).append(" username=\"").append(user).append("\" password=\"").append(password).append("\"/>");
             xml.append("</drl>");
@@ -109,7 +109,7 @@ public class APIHandler {
             }
             NodeList roots = doc.getElementsByTagName("drl");
 
-            if( roots.getLength() != 1 ) {
+            if( roots.getLength() == 1 ) {
                 Node drl = roots.item(0);
 
                 if( drl.hasAttributes() ) {
@@ -195,7 +195,13 @@ public class APIHandler {
         return new DefaultHttpClient(params);
     }
 
-    private @Nonnull String getEndpoint() throws ConfigurationException, InternalException {
+    /**
+     * Provides access to the context endpoint that will be used for this connection.
+     * @return the context endpoint for API calls
+     * @throws ConfigurationException the environment was not properly configured to make calls
+     * @throws InternalException an error occurred within Dasein Cloud while processing the request
+     */
+    public @Nonnull String getEndpoint() throws ConfigurationException, InternalException {
         ProviderContext ctx = provider.getContext();
 
         if( ctx == null ) {
@@ -211,46 +217,24 @@ public class APIHandler {
     }
 
 
-    private void parseError(@Nullable APIResponse apiResponse, @Nonnull HttpEntity entity, int httpCode, @Nonnull String defaultReason) throws ASMException, InternalException {
+    private void parseError(int httpCode, @Nonnull String defaultReason, NodeList errors) throws ASMException, InternalException {
         String reason = defaultReason;
-        String body;
+        String body = "";
 
-        try {
-            body = EntityUtils.toString(entity);
+        Node error = errors.item(0);
 
-            Document doc = parseResponse(body);
+        if( error.hasAttributes() ) {
+            Node code = error.getAttributes().getNamedItem("code");
+            Node message = error.getAttributes().getNamedItem("message");
 
-            if( wire.isDebugEnabled() ) {
-                wire.debug(body);
+            if( code != null ) {
+                reason = code.getNodeValue().trim();
             }
-            wire.debug("");
-            NodeList errors = doc.getElementsByTagName("error");
-
-            if( errors != null && errors.getLength() > 0 ) {
-                Node error = errors.item(0);
-
-                if( error.hasAttributes() ) {
-                    Node code = error.getAttributes().getNamedItem("code");
-                    Node message = error.getAttributes().getNamedItem("message");
-
-                    if( code != null ) {
-                        reason = code.getNodeValue().trim();
-                    }
-                    if( message != null ) {
-                        body = message.getNodeValue().trim();
-                    }
-                }
+            if( message != null ) {
+                body = message.getNodeValue().trim();
             }
         }
-        catch( IOException e ) {
-            throw new ASMException(e);
-        }
-        if( apiResponse != null ) {
-            apiResponse.receive(new ASMException(CloudErrorType.GENERAL, httpCode, reason, body));
-        }
-        else {
-            throw new ASMException(CloudErrorType.GENERAL, httpCode, reason, body);
-        }
+        throw new ASMException(CloudErrorType.GENERAL, httpCode, reason, body);
     }
 
     private @Nonnull Document parseResponse(@Nonnull String responseBody) throws ASMException, InternalException {
@@ -300,7 +284,7 @@ public class APIHandler {
                     logger.warn("Invalid XML being submitted to cloud: " + t.getMessage());
                 }
             }
-            String target = getEndpoint();
+            String target = getEndpoint() + "/xmlApiServlet";
 
             if( wire.isDebugEnabled() ) {
                 wire.debug("");
@@ -374,32 +358,31 @@ public class APIHandler {
                     if( status.getStatusCode() == HttpStatus.SC_NOT_FOUND ) {
                         throw new CloudException("No such endpoint: " + target);
                     }
-                    if( status.getStatusCode() != HttpStatus.SC_ACCEPTED && status.getStatusCode() != HttpStatus.SC_CREATED ) {
-                        logger.error("Expected ACCEPTED or CREATED for POST request, got " + status.getStatusCode());
-                        HttpEntity entity = response.getEntity();
+                    HttpEntity entity = response.getEntity();
 
-                        if( entity == null ) {
-                            throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
-                        }
-                        parseError(null, entity, status.getStatusCode(), status.getReasonPhrase());
+                    if( entity == null ) {
+                        throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
+                    }
+                    try {
+                        xml = EntityUtils.toString(entity);
+                    }
+                    catch( IOException e ) {
+                        throw new ASMException(e);
+                    }
+                    if( wire.isDebugEnabled() ) {
+                        wire.debug(xml);
+                    }
+                    wire.debug("");
+
+                    Document doc = parseResponse(xml);
+
+                    NodeList errors = doc.getElementsByTagName("error");
+
+                    if( errors.getLength() > 0 ) {
+                        parseError(status.getStatusCode(), status.getReasonPhrase(), errors);
                         throw new ASMException(CloudErrorType.GENERAL, status.getStatusCode(), status.getReasonPhrase(), status.getReasonPhrase());
                     }
                     else {
-                        HttpEntity entity = response.getEntity();
-
-                        if( entity == null ) {
-                            throw new CloudException("No response to the POST");
-                        }
-                        try {
-                            xml = EntityUtils.toString(entity);
-                        }
-                        catch( IOException e ) {
-                            throw new ASMException(e);
-                        }
-                        if( wire.isDebugEnabled() ) {
-                            wire.debug(xml);
-                        }
-                        wire.debug("");
                         APIResponse r = new APIResponse();
 
                         r.receive(status.getStatusCode(), parseResponse(xml), true);

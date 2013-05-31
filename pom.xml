@@ -170,6 +170,10 @@
         <configuration>
             <systemProperties>
                 <property>
+                    <name>providerClass</name>
+                    <value>${providerClass}</value>
+                </property>
+                <property>
                     <name>endpoint</name>
                     <value>${endpoint}</value>
                 </property>
@@ -186,12 +190,12 @@
                     <value>${apiSecretKey}</value>
                 </property>
                 <property>
-                    <name>x509Cert</name>
-                    <value>${x509Cert}</value>
+                    <name>accessPublic</name>
+                    <value>${apiSharedKey}</value>
                 </property>
                 <property>
-                    <name>x509Key</name>
-                    <value>${x509Key}</value>
+                    <name>accessPrivate</name>
+                    <value>${apiSecretKey}</value>
                 </property>
                 <property>
                     <name>cloudName</name>
