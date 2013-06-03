@@ -22,6 +22,7 @@ package org.dasein.cloud.dell.asm;
 import org.apache.log4j.Logger;
 import org.dasein.cloud.AbstractCloud;
 import org.dasein.cloud.ProviderContext;
+import org.dasein.cloud.dell.asm.ci.ASMCIServices;
 import org.dasein.cloud.dell.asm.compute.ASMComputeServices;
 
 import javax.annotation.Nonnegative;
@@ -97,6 +98,11 @@ public class DellASM extends AbstractCloud {
     @Override
     public @Nonnull ASMComputeServices getComputeServices() {
         return new ASMComputeServices(this);
+    }
+
+    @Override
+    public @Nonnull ASMCIServices getCIServices() {
+        return new ASMCIServices(this);
     }
 
     @Override

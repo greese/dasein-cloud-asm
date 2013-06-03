@@ -17,19 +17,31 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.dell.asm.compute;
+package org.dasein.cloud.dell.asm.ci;
 
-import org.dasein.cloud.compute.AbstractComputeServices;
+import org.dasein.cloud.ci.AbstractCIServices;
 import org.dasein.cloud.dell.asm.DellASM;
+
+import javax.annotation.Nonnull;
 
 /**
  * [Class Documentation]
- * <p>Created by George Reese: 5/28/13 6:24 PM</p>
+ * <p>Created by George Reese: 6/3/13 3:53 PM</p>
  *
  * @author George Reese
  */
-public class ASMComputeServices extends AbstractComputeServices {
+public class ASMCIServices extends AbstractCIServices {
     private DellASM provider;
 
-    public ASMComputeServices(DellASM provider) { this.provider = provider; }
+    public ASMCIServices(@Nonnull DellASM provider) { this.provider = provider; }
+
+    @Override
+    public @Nonnull ASMSession getConvergedInfrastructureSupport() {
+        return new ASMSession(provider);
+    }
+
+    @Override
+    public @Nonnull ASMArchive getTopologySupport() {
+        return new ASMArchive(provider);
+    }
 }

@@ -17,21 +17,17 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.dell.asm.compute.image;
+package org.dasein.cloud.dell.asm.ci;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
-import org.dasein.cloud.OperationNotSupportedException;
-import org.dasein.cloud.compute.AbstractTopologySupport;
+import org.dasein.cloud.ci.AbstractTopologySupport;
+import org.dasein.cloud.ci.Topology;
+import org.dasein.cloud.ci.TopologyFilterOptions;
+import org.dasein.cloud.ci.TopologyState;
 import org.dasein.cloud.compute.Architecture;
-import org.dasein.cloud.compute.CIFilterOptions;
-import org.dasein.cloud.compute.CompositeInfrastructure;
 import org.dasein.cloud.compute.Platform;
-import org.dasein.cloud.compute.Topology;
-import org.dasein.cloud.compute.TopologyFilterOptions;
-import org.dasein.cloud.compute.TopologyProvisionOptions;
-import org.dasein.cloud.compute.TopologyState;
 import org.dasein.cloud.dell.asm.APIHandler;
 import org.dasein.cloud.dell.asm.APIResponse;
 import org.dasein.cloud.dell.asm.DellASM;
@@ -59,23 +55,22 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Implements support for ASM templates as Dasein Cloud images.
- * <p>Created by George Reese: 5/28/13 6:24 PM</p>
+ * [Class Documentation]
+ * <p>Created by George Reese: 6/3/13 3:56 PM</p>
+ *
  * @author George Reese
- * @version 2013.07 initial version
- * @since 2013.07
  */
-public class ASMTemplate extends AbstractTopologySupport<DellASM> {
-    static private final Logger logger = DellASM.getLogger(ASMTemplate.class);
+public class ASMArchive extends AbstractTopologySupport<DellASM> {
+    static private final Logger logger = DellASM.getLogger(ASMArchive.class);
 
-    public ASMTemplate(@Nonnull DellASM provider) { super(provider); }
+    public ASMArchive(@Nonnull DellASM provider) { super(provider); }
 
     @Override
     public Topology getTopology(@Nonnull String providerTopologyId) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "getTopology");
         try {
             if( logger.isTraceEnabled() ) {
-                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".getTopology(" + providerTopologyId + ")");
+                logger.trace("ENTER: " + ASMArchive.class.getName() + ".getTopology(" + providerTopologyId + ")");
             }
             try {
                 // TODO: optimize
@@ -94,7 +89,7 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
             }
             finally {
                 if( logger.isTraceEnabled() ) {
-                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".getTopology()");
+                    logger.trace("EXIT: " + ASMArchive.class.getName() + ".getTopology()");
                 }
             }
         }
@@ -105,7 +100,7 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
 
     @Override
     public @Nonnull String getProviderTermForTopology(@Nonnull Locale locale) {
-        return "template";
+        return "archive";
     }
 
     @Override
@@ -113,18 +108,13 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
         return true;
     }
 
-    @Override
-    public @Nonnull Iterable<CompositeInfrastructure> listCompositeInfrastructures(@Nullable CIFilterOptions options) throws CloudException, InternalException {
-        // TODO: implement me
-        return null;
-    }
 
     @Override
     public @Nonnull Iterable<Topology> listTopologies(@Nullable TopologyFilterOptions options) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "listTopologies");
         try {
             if( logger.isTraceEnabled() ) {
-                logger.trace("ENTER: " + ASMTemplate.class.getName() + ".listTopologies(" + options + ")");
+                logger.trace("ENTER: " + ASMArchive.class.getName() + ".listTopologies(" + options + ")");
             }
             try {
                 APIHandler handler = new APIHandler(getProvider());
@@ -167,7 +157,7 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
             }
             finally {
                 if( logger.isTraceEnabled() ) {
-                    logger.trace("EXIT: " + ASMTemplate.class.getName() + ".listTopologies()");
+                    logger.trace("EXIT: " + ASMArchive.class.getName() + ".listTopologies()");
                 }
             }
         }
@@ -176,25 +166,6 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
         }
     }
 
-    @Override
-    public @Nonnull Iterable<String> listVirtualMachines(@Nonnull String ciId) throws CloudException, InternalException {
-        return null; // TODO: implement me
-    }
-
-    @Override
-    public @Nonnull Iterable<String> listVLANs(@Nonnull String ciId) throws CloudException, InternalException {
-        return null; // TODO: implement me
-    }
-
-    @Override
-    public @Nonnull CompositeInfrastructure provision(@Nonnull TopologyProvisionOptions options) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Not yet supported");
-    }
-
-    @Override
-    public void terminate(@Nonnull String ciId, @Nullable String explanation) throws CloudException, InternalException {
-        // TODO: implement me
-    }
 
     private @Nullable  Topology toTopology(@Nullable Node archive) throws CloudException, InternalException {
         if( archive == null ) {
