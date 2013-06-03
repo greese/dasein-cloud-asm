@@ -24,11 +24,12 @@ import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.OperationNotSupportedException;
 import org.dasein.cloud.compute.AbstractTopologySupport;
+import org.dasein.cloud.compute.CIFilterOptions;
+import org.dasein.cloud.compute.CompositeInfrastructure;
 import org.dasein.cloud.compute.Topology;
 import org.dasein.cloud.compute.TopologyFilterOptions;
 import org.dasein.cloud.compute.TopologyProvisionOptions;
 import org.dasein.cloud.compute.TopologyState;
-import org.dasein.cloud.compute.VirtualMachine;
 import org.dasein.cloud.dell.asm.APIHandler;
 import org.dasein.cloud.dell.asm.APIResponse;
 import org.dasein.cloud.dell.asm.DellASM;
@@ -103,6 +104,12 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
     }
 
     @Override
+    public @Nonnull Iterable<CompositeInfrastructure> listCompositeInfrastructures(@Nullable CIFilterOptions options) throws CloudException, InternalException {
+        // TODO: implement me
+        return null;
+    }
+
+    @Override
     public @Nonnull Iterable<Topology> listTopologies(@Nullable TopologyFilterOptions options) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "listTopologies");
         try {
@@ -160,8 +167,23 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
     }
 
     @Override
-    public @Nonnull Iterable<VirtualMachine> provision(@Nonnull TopologyProvisionOptions options) throws CloudException, InternalException {
+    public @Nonnull Iterable<String> listVirtualMachines(@Nonnull String ciId) throws CloudException, InternalException {
+        return null; // TODO: implement me
+    }
+
+    @Override
+    public @Nonnull Iterable<String> listVLANs(@Nonnull String ciId) throws CloudException, InternalException {
+        return null; // TODO: implement me
+    }
+
+    @Override
+    public @Nonnull CompositeInfrastructure provision(@Nonnull TopologyProvisionOptions options) throws CloudException, InternalException {
         throw new OperationNotSupportedException("Not yet supported");
+    }
+
+    @Override
+    public void terminate(@Nonnull String ciId, @Nullable String explanation) throws CloudException, InternalException {
+        // TODO: implement me
     }
 
     private @Nullable  Topology toTopology(@Nullable Node archive) throws CloudException, InternalException {
@@ -169,7 +191,7 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
             return null;
         }
         HashMap<String,String> tags = new HashMap<String, String>();
-        TopologyState state = TopologyState.OFFLINE;
+        TopologyState state = TopologyState.ACTIVE;
         String regionId = getContext().getRegionId();
         String ownerId = null, topologyId = null;
         String name = null, description = null;
