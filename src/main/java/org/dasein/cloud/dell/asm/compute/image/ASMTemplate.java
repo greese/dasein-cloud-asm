@@ -24,8 +24,10 @@ import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.OperationNotSupportedException;
 import org.dasein.cloud.compute.AbstractTopologySupport;
+import org.dasein.cloud.compute.Architecture;
 import org.dasein.cloud.compute.CIFilterOptions;
 import org.dasein.cloud.compute.CompositeInfrastructure;
+import org.dasein.cloud.compute.Platform;
 import org.dasein.cloud.compute.Topology;
 import org.dasein.cloud.compute.TopologyFilterOptions;
 import org.dasein.cloud.compute.TopologyProvisionOptions;
@@ -35,17 +37,25 @@ import org.dasein.cloud.dell.asm.APIResponse;
 import org.dasein.cloud.dell.asm.DellASM;
 import org.dasein.cloud.dell.asm.NoContextException;
 import org.dasein.cloud.util.APITrace;
+import org.dasein.cloud.util.XMLParser;
+import org.dasein.util.uom.storage.Megabyte;
+import org.dasein.util.uom.storage.Storage;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -191,7 +201,9 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
             return null;
         }
         HashMap<String,String> tags = new HashMap<String, String>();
-        TopologyState state = TopologyState.ACTIVE;
+        ArrayList<Topology.VMDevice> vms = new ArrayList<Topology.VMDevice>();
+        ArrayList<Topology.VLANDevice> vlans = new ArrayList<Topology.VLANDevice>();
+        TopologyState state = TopologyState.OFFLINE;
         String regionId = getContext().getRegionId();
         String ownerId = null, topologyId = null;
         String name = null, description = null;
@@ -244,6 +256,56 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
                 tags.put("ismaster", n.getNodeValue().trim());
             }
         }
+        if( archive.hasChildNodes() ) {
+            NodeList items = archive.getChildNodes();
+
+            for( int i=0; i<items.getLength(); i++ ) {
+                Node n = items.item(i);
+
+                if( n.getNodeName().equalsIgnoreCase("content") && n.hasChildNodes() ) {
+                    String xml = n.getFirstChild().getNodeValue();
+
+                    try {
+                        Document doc = XMLParser.parse(new ByteArrayInputStream(xml.getBytes()));
+                        NodeList topologies = doc.getElementsByTagName("topology");
+
+                        for( int j=0; j<topologies.getLength(); j++ ) {
+                            Node t = topologies.item(j);
+
+                            if( t.hasChildNodes() ) {
+                                NodeList children = t.getChildNodes();
+
+                                // have to parse all devices first
+                                // yes, the DTD says they should all come first, but I never trust that
+                                for( int k=0; k<children.getLength(); k++ ) {
+                                    Node child = children.item(k);
+
+                                    if( child.getNodeName().equalsIgnoreCase("device") ) {
+                                        parseDevice(child, vms, vlans);
+                                    }
+                                }
+                                // then attributes
+                                for( int k=0; k<children.getLength(); k++ ) {
+                                    Node child = children.item(k);
+                                    if( child.getNodeName().equalsIgnoreCase("attribute") ) {
+                                        parseAttribute(child, vms, vlans);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch( IOException e ) {
+                        throw new CloudException(e);
+                    }
+                    catch( ParserConfigurationException e ) {
+                        throw new InternalException(e);
+                    }
+                    catch( SAXException e ) {
+                        throw new CloudException(e);
+                    }
+                }
+            }
+        }
         if( topologyId == null ) {
             return null;
         }
@@ -256,6 +318,201 @@ public class ASMTemplate extends AbstractTopologySupport<DellASM> {
         Topology t = Topology.getInstance(ownerId, regionId, topologyId, state, name, description).createdAt(created);
 
         t.setTags(tags);
+        if( !vms.isEmpty() ) {
+            t.withVirtualMachines(vms.toArray(new Topology.VMDevice[vms.size()]));
+        }
+        if( !vlans.isEmpty() ) {
+            t.withVLANs(vlans.toArray(new Topology.VLANDevice[vlans.size()]));
+        }
         return t;
+    }
+
+    private void parseAttribute(@Nonnull Node node, @Nonnull List<Topology.VMDevice> vms, @Nonnull List<Topology.VLANDevice> vlans) throws CloudException, InternalException {
+        if( !node.hasAttributes() || !node.hasChildNodes() ) {
+            return;
+        }
+        NamedNodeMap attrs = node.getAttributes();
+        String name = null, refs = null;
+
+        Node a = attrs.getNamedItem("name");
+
+        if( a != null ) {
+            name = a.getNodeValue().trim().toLowerCase();
+        }
+        a = attrs.getNamedItem("refs");
+        if( a != null ) {
+            refs = a.getNodeValue().trim().toLowerCase();
+        }
+        if( name == null || refs == null ) {
+            return;
+        }
+
+
+        Topology.VLANDevice vlan = null;
+        Topology.VMDevice vm = null;
+
+        for( Topology.VMDevice d : vms ) {
+            if( d.getDeviceId().equals(refs) ) {
+                vm = d;
+                break;
+            }
+        }
+        if( vm == null ) {
+            for( Topology.VLANDevice d : vlans ) {
+                if( d.getDeviceId().equals(refs) ) {
+                    vlan = d;
+                    break;
+                }
+            }
+            if( vlan == null ) {
+                return;
+            }
+            // TODO: parse VLAN stuff
+        }
+        else {
+            if( name.equalsIgnoreCase("al_osimages") ) {
+                NodeList values = node.getChildNodes();
+
+                for( int i=0; i<values.getLength(); i++ ) {
+                    Node n = values.item(i);
+
+                    if( n.getNodeName().equalsIgnoreCase("value") && n.hasChildNodes() ) {
+                        NodeList osimages = n.getChildNodes();
+
+                        for( int j=0; j<osimages.getLength(); j++ ) {
+                            Node item = osimages.item(j);
+
+                            if( item.getNodeName().equalsIgnoreCase("osimages") && item.hasChildNodes() ) {
+                                NodeList elements = item.getChildNodes();
+
+                                for( int k=0; k<elements.getLength(); k++ ) {
+                                    Node element = elements.item(k);
+
+                                    if( element.getNodeName().equalsIgnoreCase("element") && element.hasAttributes() ) {
+                                        NamedNodeMap os = element.getAttributes();
+                                        StringBuilder osname = new StringBuilder();
+                                        Node o;
+
+                                        o = os.getNamedItem("name");
+                                        if( o != null ) {
+                                            osname.append(o.getNodeValue().trim());
+                                        }
+                                        o = os.getNamedItem("path");
+                                        if( o != null ) {
+                                            osname.append(" ").append(o.getNodeValue().trim());
+                                        }
+                                        Platform platform = Platform.guess(osname.toString());
+
+                                        if( !platform.equals(Platform.UNKNOWN) ) {
+                                            vm.withPlatform(platform);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    private void parseDevice(@Nonnull Node node, @Nonnull List<Topology.VMDevice> vms, @Nonnull List<Topology.VLANDevice> vlans) throws CloudException, InternalException {
+        if( !node.hasAttributes() ) {
+            return;
+        }
+        NamedNodeMap attrs = node.getAttributes();
+        String type = null;
+
+        Node a = attrs.getNamedItem("model");
+
+        if( a != null ) {
+            type = a.getNodeValue().trim().toLowerCase();
+        }
+        if( type == null ) {
+            return;
+        }
+        if( type.equals("virtualmachine") || type.equals("servers") ) {
+            Storage<Megabyte> memory = new Storage<Megabyte>(1, Storage.MEGABYTE);
+            Architecture architecture = Architecture.I64;
+            Platform platform = Platform.UNKNOWN;
+            int capacity = 1, cpuCount = 1;
+            String deviceId, name;
+            String[] interfaces = new String[0];
+
+            a = attrs.getNamedItem("key");
+            if( a == null ) {
+                return;
+            }
+            deviceId = a.getNodeValue().trim();
+            if( deviceId.equals("") ) {
+                return;
+            }
+            a = attrs.getNamedItem("name");
+            if( a == null ) {
+                name = deviceId;
+            }
+            else {
+                name = a.getNodeValue().trim();
+            }
+            if( node.hasChildNodes() ) {
+                NodeList children = node.getChildNodes();
+
+                for( int i=0; i<children.getLength(); i++ ) {
+                    Node child = children.item(i);
+
+                    if( child.getNodeName().equalsIgnoreCase("enforcedproperties") && child.hasChildNodes() ) {
+                        NodeList properties = child.getChildNodes();
+
+                        for( int j=0; j<properties.getLength(); j++ ) {
+                            Node property = properties.item(j);
+
+                            if( property.getNodeName().equalsIgnoreCase("property") && property.hasAttributes() ) {
+                                NamedNodeMap pa = property.getAttributes();
+                                Node n = pa.getNamedItem("name");
+                                Node v = pa.getNamedItem("value");
+
+                                if( n != null && v != null ) {
+                                    if( n.getNodeValue().equalsIgnoreCase("cpu") ) {
+                                        try {
+                                            cpuCount = Integer.parseInt(v.getNodeValue());
+                                        }
+                                        catch( NumberFormatException e ) {
+                                            logger.warn("Invalid CPU count value: " + v.getNodeValue());
+                                            return;
+                                        }
+                                    }
+                                    else if( n.getNodeValue().equalsIgnoreCase("ram") ) {
+                                        try {
+                                            memory = new Storage<Megabyte>(Integer.parseInt(v.getNodeValue()), Storage.MEGABYTE);
+                                        }
+                                        catch( NumberFormatException e ) {
+                                            logger.warn("Invalid RAM value: " + v.getNodeValue());
+                                            return;
+                                        }
+                                    }
+                                    else if( n.getNodeValue().equalsIgnoreCase("servercount") ) {
+                                        try {
+                                            capacity = Integer.parseInt(v.getNodeValue());
+                                        }
+                                        catch( NumberFormatException e ) {
+                                            logger.warn("Invalid server count value: " + v.getNodeValue());
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if( child.getNodeName().equalsIgnoreCase("interface") && child.hasChildNodes() ) {
+                        // TODO: interface parsing
+                    }
+                }
+            }
+            vms.add(Topology.VMDevice.getInstance(deviceId, capacity, name, cpuCount, memory, architecture, platform, interfaces));
+        }
+        else if( type.equals("vlan") ) {
+            // TODO: parse VLAN
+        }
     }
 }
