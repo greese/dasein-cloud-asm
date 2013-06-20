@@ -22,14 +22,21 @@ package org.dasein.cloud.dell.asm.compute;
 import org.dasein.cloud.compute.AbstractComputeServices;
 import org.dasein.cloud.dell.asm.DellASM;
 
+import javax.annotation.Nonnull;
+
 /**
- * [Class Documentation]
+ * Supports interaction with compute cloud services interfaces for the Dell ASM converged infrastructure.
  * <p>Created by George Reese: 5/28/13 6:24 PM</p>
- *
  * @author George Reese
+ * @version 2013.07
+ * @since 2013.07
  */
 public class ASMComputeServices extends AbstractComputeServices {
     private DellASM provider;
 
     public ASMComputeServices(DellASM provider) { this.provider = provider; }
+
+    public @Nonnull VirtualVM getVirtualMachineSupport() {
+        return new VirtualVM(provider);
+    }
 }
