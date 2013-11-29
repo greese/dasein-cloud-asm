@@ -216,6 +216,10 @@
                     <value>${regionId}</value>
                 </property>
                 <property>
+                    <name>test.vmId</name>
+                    <value>${test.vmId}</value>
+                </property>
+                <property>
                     <name>test.dataCenter</name>
                     <value>${test.dataCenter}</value>
                 </property>
