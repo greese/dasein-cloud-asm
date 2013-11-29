@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE drl SYSTEM "$endpoint/labmagic/v1_2/api/archive/$enumerateArchiveDtd">
+<drl mode="normal" connectionid="$connectionId">  
+  <$enumerateArchive type="TOPOLOGY" fetch="deep" fetchattachment="true" />
+  <advanced>
+    <filter>
+	  $extraFilters
+	</filter>
+  </advanced>
+</drl>

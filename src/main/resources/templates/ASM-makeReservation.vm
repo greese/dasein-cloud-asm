@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE drl SYSTEM "$endpoint/labmagic/v1_2/api/reservation/$makeReservationDtd">
+<drl mode="normal" connectionid="$connectionId">
+  <$makeReservation>
+    <params type="session" sessiontype="fixed" topologyid="$machineImageId" reservationname="$hostName" priority="elementcombination" />
+	$sessionDuration
+  </$makeReservation>
+</drl>
