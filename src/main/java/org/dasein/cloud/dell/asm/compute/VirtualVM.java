@@ -129,10 +129,7 @@ public class VirtualVM extends AbstractVMSupport<DellASM> {
         VMFilterOptions options = VMFilterOptions.getInstance(vmId);
         ArrayList<VirtualMachine> vms = (ArrayList<VirtualMachine>)listVirtualMachines(options);
         for(VirtualMachine vm : vms){
-            if(vm.getProviderVirtualMachineId().equals(vmId)){
-                stop(vmId, false);
-                return vm;
-            }
+            if(vm.getProviderVirtualMachineId().equals(vmId)) return vm;
         }
         throw new InternalException("Could not find VM with ID: " + vmId);
     }
