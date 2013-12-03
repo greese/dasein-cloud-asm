@@ -38,6 +38,10 @@ import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.dasein.cloud.CloudErrorType;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
@@ -57,6 +61,7 @@ import javax.annotation.Nonnull;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -77,7 +82,8 @@ public class APIHandler {
 
     static public final String ENUMERATE_ARCHIVE     = "enumeratearchive";
     static public final String ENUMERATE_RESERVATION = "enumeratereservations";
-    static public final String OPEN_CONNECTION       = "openconnection";
+    static public final String OPEN_CONNECTION       = "openConnection";
+    static public final String GET_USER_TOKEN        = "getUserToken";
 
     private DellASM provider;
 
@@ -92,23 +98,63 @@ public class APIHandler {
      */
     public @Nonnull String authenticate(@Nonnull ProviderContext ctx) throws CloudException, InternalException {
         try {
-            String user = new String(ctx.getAccessPublic(), "utf-8");
+            String username = new String(ctx.getAccessPublic(), "utf-8");
             String password = new String(ctx.getAccessPrivate(), "utf-8");
-            StringBuilder xml = new StringBuilder();
+            String userToken = "";
+            VelocityContext vc = null;
+            Template template = null;
+            StringWriter sw = new StringWriter();
 
-            xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            xml.append("<!DOCTYPE drl SYSTEM \"").append(getEndpoint()).append("/labmagic/v1_2/api/connection/openConnectionRequest.dtd\">");
-            xml.append("<drl mode=\"normal\">");
-            xml.append("<").append(OPEN_CONNECTION).append(" username=\"").append(user).append("\" password=\"").append(password).append("\"/>");
-            xml.append("</drl>");
+            try{
+                template = Velocity.getTemplate("templates/ASM-getUserToken.vm");
+            }
+            catch(ResourceNotFoundException ex){
+                throw new InternalException("An error occurred while authenticating: " + ex.getMessage());
+            }
+            vc = new VelocityContext();
+            vc.put("getUserToken", GET_USER_TOKEN.toLowerCase());
+            vc.put("getUserTokenDtd", GET_USER_TOKEN + "Request.dtd");
+            vc.put("username", username);
+            vc.put("password", password);
+            vc.put("endpoint", getEndpoint());
 
-            APIResponse response = post(OPEN_CONNECTION, xml.toString());
+            template.merge(vc, sw);
+            APIResponse response = post(GET_USER_TOKEN, sw.toString());
             Document doc = response.getXML();
+
+            if(doc == null){
+                throw new ASMException(CloudErrorType.AUTHENTICATION, response.getCode(), "NoAuth", "No usertoken in response");
+            }
+            NodeList roots = doc.getElementsByTagName("drl");
+            if(roots.getLength() == 1){
+                Node drl = roots.item(0);
+                if(drl.hasChildNodes()){
+                    NodeList list = drl.getChildNodes();
+                    for(int i=0;i<list.getLength();i++){
+                        if(list.item(i).hasAttributes())userToken = list.item(i).getAttributes().getNamedItem("usertoken").getNodeValue().trim();
+                    }
+                }
+            }
+
+            try{
+                template = Velocity.getTemplate("templates/ASM-openConnection.vm");
+            }
+            catch(ResourceNotFoundException ex){
+                throw new InternalException("An error occurred while authenticating: " + ex.getMessage());
+            }
+            vc.put("openConnection", OPEN_CONNECTION.toLowerCase());
+            vc.put("openConnectionDtd", OPEN_CONNECTION + "Request.dtd");
+            vc.put("usertoken", userToken);
+
+            sw = new StringWriter();
+            template.merge(vc, sw);
+            response = post(OPEN_CONNECTION, sw.toString());
+            doc = response.getXML();
 
             if( doc == null ) {
                 throw new ASMException(CloudErrorType.AUTHENTICATION, response.getCode(), "NoAuth", "No authentication in response");
             }
-            NodeList roots = doc.getElementsByTagName("drl");
+            roots = doc.getElementsByTagName("drl");
 
             if( roots.getLength() == 1 ) {
                 Node drl = roots.item(0);
@@ -157,6 +203,17 @@ public class APIHandler {
             cache.put(ctx, Collections.singletonList(connectionId));
         }
         return connectionId;
+    }
+
+    public @Nonnull String getSessionId() throws CloudException, InternalException{
+        ProviderContext ctx = provider.getContext();
+
+        if( ctx == null ) {
+            throw new NoContextException();
+        }
+        String sessionId = null;
+
+        return sessionId;
     }
 
     private @Nonnull HttpClient getClient(URI uri) throws InternalException, CloudException {
@@ -311,7 +368,7 @@ public class APIHandler {
                     HttpPost post = new HttpPost(target);
 
                     try {
-                        post.setEntity(new StringEntity(xml, "utf-8"));
+                        post.setEntity(new StringEntity(xml, "UTF-8"));
                     }
                     catch( UnsupportedEncodingException e ) {
                         logger.error("Unsupported encoding UTF-8: " + e.getMessage());
