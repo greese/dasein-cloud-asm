@@ -39,4 +39,8 @@ public class ASMComputeServices extends AbstractComputeServices {
     public @Nonnull VirtualVM getVirtualMachineSupport() {
         return new VirtualVM(provider);
     }
+
+    public @Nonnull Template getImageSupport() {
+        return new Template(provider);
+    }
 }
