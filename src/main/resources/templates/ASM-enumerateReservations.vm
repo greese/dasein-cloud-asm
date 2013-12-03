@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE drl SYSTEM "$endpoint/labmagic/v1_2/api/reservation/$enumerateReservationsDtd">
+<drl mode="normal" connectionid="$connectionId">
+  <$enumerateReservations />
+  <advanced>
+    <filter>
+	  <filtercriteria name="status" operand="!=" value1="COMPLETED"/>
+	  <filtercriteria name="status" operand="!=" value1="CANCELED"/>
+	</filter>
+  </advanced>
+</drl>

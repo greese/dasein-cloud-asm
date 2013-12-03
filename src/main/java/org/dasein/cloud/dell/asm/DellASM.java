@@ -20,6 +20,7 @@
 package org.dasein.cloud.dell.asm;
 
 import org.apache.log4j.Logger;
+import org.apache.velocity.app.Velocity;
 import org.dasein.cloud.AbstractCloud;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.dell.asm.ci.ASMCIServices;
@@ -28,6 +29,7 @@ import org.dasein.cloud.dell.asm.compute.ASMComputeServices;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Properties;
 
 /**
  * Bootstrap class for interacting with Dell ASM per the Dasein Cloud API.
@@ -82,10 +84,12 @@ public class DellASM extends AbstractCloud {
         return 0L;
     }
 
-    /**
-     * Empty constructor to create an instance of the {@link DellASM} cloud provider class.
-     */
-    public DellASM() { }
+    public DellASM(){
+        Properties props = new Properties();
+        props.setProperty("resource.loader", "class");
+        props.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
+        Velocity.init(props);
+    }
 
     @Override
     public @Nonnull String getCloudName() {
@@ -121,7 +125,7 @@ public class DellASM extends AbstractCloud {
             logger.trace("ENTER: " + DellASM.class.getName() + ".testContext()");
         }
         try {
-            ProviderContext ctx = getContext();
+            ProviderContext ctx = null;//getContext();
 
             if( ctx == null ) {
                 logger.warn("No context was provided for testing");
@@ -132,8 +136,8 @@ public class DellASM extends AbstractCloud {
             }
             try {
                 APIHandler handler = new APIHandler(this);
-
                 handler.authenticate(ctx);
+
                 if( logger.isDebugEnabled() ) {
                     logger.debug("testContext()=" + ctx.getAccountNumber());
                 }

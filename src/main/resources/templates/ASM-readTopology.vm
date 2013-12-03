@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE drl SYSTEM "$endpoint/labmagic/v1_2/api/lms/$readTopologyDtd">
+<drl mode="normal" connectionid="$connectionId">
+  <readtopology>
+    <reservation reservationid="$reservationId" />
+  </readtopology>
+</drl>
