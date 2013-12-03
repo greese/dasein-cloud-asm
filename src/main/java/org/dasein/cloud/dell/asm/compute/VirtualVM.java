@@ -135,18 +135,6 @@ public class VirtualVM extends AbstractVMSupport<DellASM> {
 
     @Nonnull
     @Override
-    public VmStatistics getVMStatistics(@Nonnull String vmId, @Nonnegative long from, @Nonnegative long to) throws InternalException, CloudException {
-        return null;
-    }
-
-    @Nonnull
-    @Override
-    public Iterable<VmStatistics> getVMStatisticsForPeriod(@Nonnull String vmId, @Nonnegative long from, @Nonnegative long to) throws InternalException, CloudException {
-        return null;
-    }
-
-    @Nonnull
-    @Override
     public Requirement identifyImageRequirement(@Nonnull ImageClass cls) throws CloudException, InternalException {
         return Requirement.REQUIRED;
     }
