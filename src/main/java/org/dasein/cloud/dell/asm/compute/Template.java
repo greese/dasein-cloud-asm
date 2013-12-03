@@ -23,10 +23,7 @@ import org.apache.log4j.Logger;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.exception.ResourceNotFoundException;
-import org.dasein.cloud.CloudErrorType;
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.ProviderContext;
+import org.dasein.cloud.*;
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.dell.asm.APIHandler;
 import org.dasein.cloud.dell.asm.APIResponse;
@@ -67,6 +64,19 @@ public class Template extends AbstractImageSupport {
     Template(@Nonnull DellASM cloud) {
         super(cloud);
         provider = cloud;
+    }
+
+    @Override
+    protected MachineImage capture(@Nonnull ImageCreateOptions options, @Nullable AsynchronousTask<MachineImage> task) throws CloudException, InternalException {
+        //TODO: Look at session - snapshotTopology call for this?
+        throw new OperationNotSupportedException("Capture Image is not yet supported for " + provider.getCloudName());
+        /*
+        ProviderContext ctx = provider.getContext();
+
+        if( ctx == null ) {
+            throw new CloudException("No context was set for this request");
+        }
+        */
     }
 
     @Override

@@ -84,12 +84,14 @@ public class VirtualVM extends AbstractVMSupport<DellASM> {
     static public final String ENUMERATE_LAB_SESSIONS = "enumerateLabSessions";
     static public final String ENUMERATE_RESERVATIONS = "enumerateReservations";
     static public final String MAKE_RESERVATION = "makeReservation";
+    static public final String CANCEL_RESERVATION = "cancelReservation";
     static public final String CONFIRM_RESPONSE = "confirmResponse";
     static public final String JOIN_LAB_SESSION = "joinLabsession";
     static public final String LEAVE_LAB_SESSION = "leaveLabsession";
     static public final String READ_TOPOLOGY = "readTopology";
     static public final String POWER_ON = "powerOn";
     static public final String POWER_OFF = "powerOff";
+
     static public final String FOUND_RESERVATION_OPTIONS = "res.scheduler.400";
 
     public VirtualVM(@Nonnull DellASM provider) {
@@ -741,7 +743,48 @@ public class VirtualVM extends AbstractVMSupport<DellASM> {
 
     @Override
     public void terminate(@Nonnull String vmId, @Nullable String explanation) throws InternalException, CloudException {
+        APITrace.begin(getProvider(), "terminateVM");
+        try{
+            APIHandler handler = new APIHandler(provider);
+            VelocityContext vc;
+            org.apache.velocity.Template template;
+            StringWriter sw = new StringWriter();
 
+            //TODO: Do a readTopology first and check for multiple VMs as we cannot terminate those - so throw error
+
+            try{
+                template = Velocity.getTemplate("templates/ASM-joinLabSession.vm");
+            }
+            catch(ResourceNotFoundException ex){
+                throw new InternalException("An error occurred joining the session: " + ex.getMessage());
+            }
+
+            String reservationId = vmId.split(":")[0];
+
+            vc = new VelocityContext();
+            vc.put("endpoint", handler.getEndpoint());
+            vc.put("connectionId", handler.getConnectionId());
+            vc.put("cancelReservation", CANCEL_RESERVATION.toLowerCase());
+            vc.put("cancelReservationDtd", CANCEL_RESERVATION + "Request.dtd");
+            vc.put("reservationId", reservationId);
+
+            template.merge(vc, sw);
+            APIResponse response = handler.post(JOIN_LAB_SESSION, sw.toString());
+            Document doc = response.getXML();
+            if(doc == null){
+                throw new ASMException(CloudErrorType.COMMUNICATION, response.getCode(), "NoResponse", "No response to terminate request");
+            }
+
+            if(doc.getElementsByTagName("error") != null && doc.getElementsByTagName("error").getLength() > 0){
+                Node error = doc.getElementsByTagName("error").item(0);
+                String errorCode = error.getAttributes().getNamedItem("code").getNodeValue().trim();
+                String errorMsg = error.getAttributes().getNamedItem("message").getNodeValue().trim();
+                throw new ASMException(CloudErrorType.GENERAL, -1, errorCode, errorMsg);
+            }
+        }
+        finally{
+            APITrace.end();
+        }
     }
 
     private Collection<VirtualMachine> toVirtualMachine(String reservationId, Document topologyContent) throws InternalException, CloudException{
