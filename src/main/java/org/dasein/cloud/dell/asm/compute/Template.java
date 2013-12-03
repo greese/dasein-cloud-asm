@@ -1,5 +1,6 @@
 /**
- * Copyright (C) 2010-2012 enStratus Networks Inc
+ * Copyright (C) 2013 Dell, Inc.
+ * See annotations for authorship information
  *
  * ====================================================================
  * Licensed under the Apache License, Version 2.0 (the "License");
