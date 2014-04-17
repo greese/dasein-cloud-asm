@@ -348,6 +348,7 @@ public class APIHandler {
                 wire.debug("");
                 wire.debug(">>> [POST (" + (new Date()) + ")] -> " + target + " >--------------------------------------------------------------------------------------");
             }
+            HttpClient client = null;
             try {
                 URI uri;
 
@@ -357,7 +358,7 @@ public class APIHandler {
                 catch( URISyntaxException e ) {
                     throw new ConfigurationException(e);
                 }
-                HttpClient client = getClient(uri);
+                client = getClient(uri);
 
                 try {
                     ProviderContext ctx = provider.getContext();
@@ -456,6 +457,9 @@ public class APIHandler {
                 if( wire.isDebugEnabled() ) {
                     wire.debug("<<< [POST (" + (new Date()) + ")] -> " + target + " <--------------------------------------------------------------------------------------");
                     wire.debug("");
+                }
+                if (client != null) {
+                    client.getConnectionManager().shutdown();
                 }
             }
         }
